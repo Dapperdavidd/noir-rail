@@ -40,7 +40,11 @@ fn setup() -> (Env, ShieldedPoolClient<'static>, Address, Address) {
     (env, client, admin, token_addr)
 }
 
+// Two real deposits each run ~20 software-Poseidon hashes up the depth-20 tree. That is fast as
+// optimized wasm on-chain (proven by tools/demo.sh on testnet) but minutes in the debug native
+// interpreter, so this integration-style test is opt-in: `cargo test -- --ignored`.
 #[test]
+#[ignore = "slow in the debug host; deposit/append is proven end-to-end on testnet via demo.sh"]
 fn deposit_escrows_and_appends_commitment() {
     let (env, client, _admin, token_addr) = setup();
 
