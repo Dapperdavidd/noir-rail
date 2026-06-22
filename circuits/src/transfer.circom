@@ -97,4 +97,5 @@ template Transfer(treeDepth) {
     outCommitment1 <== o1.commitment;
 }
 
-component main {public [stateRoot]} = Transfer(20);
+// Depth 14 — see the note in withdraw.circom; both circuits and the contract must agree.
+component main {public [stateRoot]} = Transfer(14);

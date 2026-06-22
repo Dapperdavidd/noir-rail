@@ -60,4 +60,8 @@ template Withdraw(treeDepth) {
     recipientSquared <== recipient * recipient;
 }
 
-component main {public [withdrawnValue, stateRoot, recipient]} = Withdraw(20);
+// Depth 14 ⇒ 16,384 notes per pool. Chosen so a transfer's two on-chain Merkle inserts fit
+// alongside the Groth16 pairing within the per-transaction instruction budget. Raising it to 20
+// (~1M notes) is a Phase-1 optimization gated on cheaper on-chain hashing (persistent subtree
+// cache or the CAP-0075 host-function Poseidon).
+component main {public [withdrawnValue, stateRoot, recipient]} = Withdraw(14);

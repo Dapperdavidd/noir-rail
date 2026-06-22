@@ -4,7 +4,8 @@
 // so computing it client-side leaks nothing.
 import { poseidon } from "./poseidon.ts";
 
-export const TREE_DEPTH = 20;
+// Must equal the depth baked into the circuits, the contract, and noterail.
+export const TREE_DEPTH = 14;
 
 function zeroHashes(depth: number): bigint[] {
   const z: bigint[] = [0n];

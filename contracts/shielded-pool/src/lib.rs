@@ -36,8 +36,11 @@ use zk::{Groth16Verifier, Proof, PublicSignals, VerificationKey};
 #[cfg(test)]
 mod test;
 
-/// Depth of the commitment tree. 2^20 ≈ 1,048,576 notes per pool.
-const TREE_DEPTH: u32 = 20;
+/// Depth of the commitment tree. 2^14 = 16,384 notes per pool. Sized so a transfer's two on-chain
+/// Merkle inserts fit alongside the Groth16 pairing within the per-tx instruction budget; raising
+/// it is a Phase-1 task (persistent subtree cache or CAP-0075 host Poseidon). Must equal the depth
+/// baked into the circuits and the SDK.
+const TREE_DEPTH: u32 = 14;
 /// Number of recent roots retained so in-flight proofs survive concurrent deposits.
 const ROOT_HISTORY_SIZE: u32 = 32;
 
@@ -237,8 +240,8 @@ impl ShieldedPool {
 
         // 4. Commit: spend the input, append both outputs, advance the root.
         Self::spend_nullifier(env, nullifier);
-        Self::append_commitment(env, out_commitment0.to_bytes())?;
-        let (new_root, _) = Self::append_commitment(env, out_commitment1.to_bytes())?;
+        let new_root =
+            Self::append_pair(env, out_commitment0.to_bytes(), out_commitment1.to_bytes())?;
         Self::record_root(env, new_root);
         Ok(())
     }
@@ -330,6 +333,34 @@ impl ShieldedPool {
         env.storage().instance().set(&TREE_DEPTH_KEY, &new_depth);
         env.storage().instance().set(&TREE_ROOT_KEY, &new_root);
         Ok((new_root, leaf_index))
+    }
+
+    /// Append two commitments through a single tree load/save. The Merkle cache stays warm across
+    /// both inserts (instead of recomputing the empty-subtree hashes on a second cold load), which
+    /// keeps a transfer's on-chain hashing — alongside the one Groth16 pairing — within the
+    /// per-transaction instruction budget.
+    fn append_pair(env: &Env, a: BytesN<32>, b: BytesN<32>) -> Result<BytesN<32>, Error> {
+        let leaves: Vec<BytesN<32>> = env
+            .storage()
+            .instance()
+            .get(&TREE_LEAVES_KEY)
+            .unwrap_or(Vec::new(env));
+        let depth: u32 = env.storage().instance().get(&TREE_DEPTH_KEY).unwrap_or(0);
+        let root: BytesN<32> = env
+            .storage()
+            .instance()
+            .get(&TREE_ROOT_KEY)
+            .unwrap_or(BytesN::from_array(env, &[0u8; 32]));
+
+        let mut tree = LeanIMT::from_storage(env, leaves, depth, root);
+        tree.insert(a).map_err(|_| Error::TreeAtCapacity)?;
+        tree.insert(b).map_err(|_| Error::TreeAtCapacity)?;
+
+        let (new_leaves, new_depth, new_root) = tree.to_storage();
+        env.storage().instance().set(&TREE_LEAVES_KEY, &new_leaves);
+        env.storage().instance().set(&TREE_DEPTH_KEY, &new_depth);
+        env.storage().instance().set(&TREE_ROOT_KEY, &new_root);
+        Ok(new_root)
     }
 
     /// Append `root` to the bounded ring buffer of recent roots.
