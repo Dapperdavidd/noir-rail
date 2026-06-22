@@ -197,6 +197,14 @@
                     },
                     {
                       "key": {
+                        "symbol": "tvk"
+                      },
+                      "val": {
+                        "bytes": ""
+                      }
+                    },
+                    {
+                      "key": {
                         "symbol": "vk"
                       },
                       "val": {
