@@ -1,0 +1,18 @@
+[package]
+name = "shielded-pool"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["lib", "cdylib"]
+doctest = false
+
+[dependencies]
+soroban-sdk = { workspace = true, features = ["alloc"] }
+soroban-poseidon = { workspace = true }
+lean-imt = { path = "../libs/lean-imt" }
+zk = { path = "../libs/groth16" }
+
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }

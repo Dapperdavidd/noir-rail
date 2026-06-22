@@ -1,0 +1,22 @@
+{
+  "name": "noir-rail",
+  "version": "0.0.0",
+  "private": true,
+  "description": "NoirRail — shielded settlement for tokenized real-world assets on Stellar. A rail you can see through but no one can see into.",
+  "license": "Apache-2.0",
+  "packageManager": "pnpm@11.4.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "circuits:build": "pnpm --filter @noir-rail/circuits build",
+    "circuits:setup": "pnpm --filter @noir-rail/circuits setup",
+    "contracts:build": "bash tools/build-contracts.sh",
+    "sdk:build": "pnpm --filter @noir-rail/sdk build",
+    "web:dev": "pnpm --filter @noir-rail/web dev",
+    "web:build": "pnpm --filter @noir-rail/web build"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}

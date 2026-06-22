@@ -1,0 +1,31 @@
+[workspace]
+resolver = "2"
+members = [
+  "contracts/shielded-pool",
+  "contracts/libs/lean-imt",
+  "contracts/libs/groth16",
+  "cli/circom2soroban",
+  "cli/noterail",
+]
+
+# Pinned to the exact versions proven end-to-end on Stellar testnet (June 2026).
+# The circuit's Poseidon (poseidon255.circom) is byte-matched to soroban-poseidon at
+# this version; bumping the SDK is a Phase-1 hardening task that must re-verify that match.
+[workspace.dependencies]
+soroban-sdk = { version = "25.0.0-rc.1" }
+soroban-poseidon = { version = "25.0.0-rc.1" }
+
+# Size- and cost-optimized wasm for the settlement path.
+[profile.release]
+opt-level = "z"
+overflow-checks = true
+debug = 0
+strip = "symbols"
+debug-assertions = false
+panic = "abort"
+codegen-units = 1
+lto = true
+
+[profile.release-with-logs]
+inherits = "release"
+debug-assertions = true
