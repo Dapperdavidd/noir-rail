@@ -18,7 +18,9 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 lean-imt = { path = "../../contracts/libs/lean-imt" }
 soroban-poseidon = { workspace = true }
-soroban-sdk = { workspace = true }
+# testutils: this off-chain CLI runs the Soroban host directly and lifts the budget
+# (env.cost_estimate().budget().reset_unlimited()) to compute Poseidon/Merkle unbounded.
+soroban-sdk = { workspace = true, features = ["testutils"] }
 num-bigint = "0.4"
 clap = { version = "4.0", features = ["derive"] }
 thiserror = "1.0"
