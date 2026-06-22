@@ -39,9 +39,7 @@ mod tests {
             state_root: "6000".to_string(),
             state_index: "0".to_string(),
             state_siblings: vec!["7000".to_string(), "8000".to_string()],
-            association_root: "9000".to_string(),
-            label_index: "1".to_string(),
-            label_siblings: vec!["10000".to_string(), "11000".to_string()],
+            recipient: "9000".to_string(),
         };
 
         let json = manager.serialize_snark_input(&input).unwrap();

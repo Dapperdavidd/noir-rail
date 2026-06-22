@@ -103,9 +103,12 @@ mod tests {
                 nullifier: "200".to_string(),
                 secret: "300".to_string(),
                 label: "400".to_string(),
+                precommitment: "450".to_string(),
                 commitment: "500".to_string(),
             },
             commitment_hex: "0x123".to_string(),
+            label_hex: "0x400".to_string(),
+            precommitment_hex: "0x450".to_string(),
         };
 
         // Test write and read

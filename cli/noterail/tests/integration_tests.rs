@@ -105,6 +105,7 @@ async fn test_coin_generation() -> Result<()> {
     // Generate a coin
     command_handler.handle_generate(
         "test_scope".to_string(),
+        None,
         output_file.to_str().unwrap().to_string(),
     )?;
 

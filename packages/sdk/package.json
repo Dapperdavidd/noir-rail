@@ -1,0 +1,22 @@
+{
+  "name": "@noir-rail/sdk",
+  "version": "0.0.0",
+  "private": true,
+  "description": "NoirRail client SDK — notes, BLS12-381 field math, Poseidon, Merkle, and Groth16 artifact conversion. Secrets never leave the device.",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./poseidon": "./src/poseidon.ts"
+  },
+  "scripts": {
+    "gen:constants": "node scripts/gen-poseidon-constants.mjs",
+    "verify:poseidon": "node scripts/verify-poseidon.mts",
+    "verify:merkle": "node scripts/verify-merkle.mts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}
