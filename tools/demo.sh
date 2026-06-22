@@ -41,12 +41,13 @@ stellar contract optimize \
   --wasm-out target/wasm32v1-none/release/shielded_pool.optimized.wasm >/dev/null
 
 VK_HEX="$(cargo run --release --quiet --bin circom2soroban -- vk circuits/ceremony/withdraw/verification_key.json | grep -oE '[0-9a-f]{64,}$' | tail -1)"
-[ -n "$VK_HEX" ] || { echo "✗ failed to extract vk hex"; exit 1; }
+TVK_HEX="$(cargo run --release --quiet --bin circom2soroban -- vk circuits/ceremony/transfer/verification_key.json | grep -oE '[0-9a-f]{64,}$' | tail -1)"
+[ -n "$VK_HEX" ] && [ -n "$TVK_HEX" ] || { echo "✗ failed to extract vk hex"; exit 1; }
 
 CONTRACT_ID="$(stellar contract deploy \
   --wasm target/wasm32v1-none/release/shielded_pool.optimized.wasm \
   --source noir_demo --network "$NETWORK" \
-  -- --vk_bytes "$VK_HEX" --token_address "$TOKEN_ADDRESS" --admin noir_demo --asset_id "$ASSET_ID" \
+  -- --vk_bytes "$VK_HEX" --transfer_vk_bytes "$TVK_HEX" --token_address "$TOKEN_ADDRESS" --admin noir_demo --asset_id "$ASSET_ID" \
   2>&1 | grep -oE 'C[A-Z0-9]{55}' | tail -1)"
 [ -n "$CONTRACT_ID" ] || { echo "✗ deploy failed"; exit 1; }
 echo "   pool: $CONTRACT_ID"

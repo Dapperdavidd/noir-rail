@@ -36,6 +36,30 @@ export interface WithdrawWitness {
   stateSiblings: string[];
 }
 
+/** circom witness input for the transfer circuit (decimal field strings). */
+export interface TransferWitness {
+  stateRoot: string;
+  inValue: string;
+  inLabel: string;
+  inNullifier: string;
+  inSecret: string;
+  stateIndex: string;
+  stateSiblings: string[];
+  outValue0: string;
+  outLabel0: string;
+  outPrecommitment0: string;
+  outValue1: string;
+  outLabel1: string;
+  outPrecommitment1: string;
+}
+
+/** A recipient's shielded payment address — the public parts an incoming note is built from. */
+export interface PaymentAddress {
+  value: bigint;
+  label: bigint;
+  precommitment: bigint;
+}
+
 /** A cryptographically strong field element in [0, 2^248) (< r). */
 function randomField(): bigint {
   const b = new Uint8Array(31); // 248 bits, always below the field modulus
@@ -97,5 +121,48 @@ export async function buildWithdrawWitness(
     secret: toDecimal(note.secret),
     stateIndex: String(leafIndex),
     stateSiblings: path.siblings.map(toDecimal),
+  };
+}
+
+/**
+ * Build the transfer witness: spend `inNote`, pay `out0` to a recipient (identified by their
+ * payment address — value + label + precommitment they shared), and return the remainder as a
+ * fresh change note the sender keeps. Value is conserved; the change note is returned so the
+ * caller can persist it. The sender never learns the recipient's secrets.
+ */
+export async function buildTransferWitness(
+  inNote: Note,
+  commitments: bigint[],
+  out0: PaymentAddress,
+  changeScope: string,
+): Promise<{ witness: TransferWitness; changeNote: Note; out0Commitment: bigint }> {
+  const tree = new MerkleTree(commitments);
+  const leafIndex = tree.indexOf(inNote.commitment);
+  if (leafIndex < 0) throw new Error("input note not found in the pool state");
+  const path = tree.proof(leafIndex);
+
+  const changeValue = inNote.value - out0.value;
+  if (changeValue < 0n) throw new Error("transfer amount exceeds the note value");
+  const changeNote = generateNote(changeScope, changeValue);
+  const out0Commitment = poseidon([out0.value, out0.label, out0.precommitment]);
+
+  return {
+    witness: {
+      stateRoot: toDecimal(path.root),
+      inValue: toDecimal(inNote.value),
+      inLabel: toDecimal(inNote.label),
+      inNullifier: toDecimal(inNote.nullifier),
+      inSecret: toDecimal(inNote.secret),
+      stateIndex: String(leafIndex),
+      stateSiblings: path.siblings.map(toDecimal),
+      outValue0: toDecimal(out0.value),
+      outLabel0: toDecimal(out0.label),
+      outPrecommitment0: toDecimal(out0.precommitment),
+      outValue1: toDecimal(changeNote.value),
+      outLabel1: toDecimal(changeNote.label),
+      outPrecommitment1: toDecimal(changeNote.precommitment),
+    },
+    changeNote,
+    out0Commitment,
   };
 }

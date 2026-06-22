@@ -43,7 +43,8 @@ const ROOT_HISTORY_SIZE: u32 = 32;
 
 // --- storage keys ---
 const ADMIN_KEY: Symbol = symbol_short!("admin");
-const VK_KEY: Symbol = symbol_short!("vk");
+const VK_KEY: Symbol = symbol_short!("vk"); // withdraw / unshield verification key
+const TVK_KEY: Symbol = symbol_short!("tvk"); // transfer verification key
 const TOKEN_KEY: Symbol = symbol_short!("token");
 const ASSET_KEY: Symbol = symbol_short!("asset");
 const NULL_KEY: Symbol = symbol_short!("null");
@@ -82,12 +83,14 @@ impl ShieldedPool {
     pub fn __constructor(
         env: &Env,
         vk_bytes: Bytes,
+        transfer_vk_bytes: Bytes,
         token_address: Address,
         admin: Address,
         asset_id: u32,
     ) {
         env.storage().instance().set(&ADMIN_KEY, &admin);
         env.storage().instance().set(&VK_KEY, &vk_bytes);
+        env.storage().instance().set(&TVK_KEY, &transfer_vk_bytes);
         env.storage().instance().set(&TOKEN_KEY, &token_address);
         env.storage().instance().set(&ASSET_KEY, &asset_id);
 
@@ -195,6 +198,48 @@ impl ShieldedPool {
 
         Self::spend_nullifier(env, nullifier);
         token_client.transfer(&env.current_contract_address(), &to, &amount);
+        Ok(())
+    }
+
+    /// **Transfer.** Private → private settlement: spend one input note and append two output
+    /// notes, with value conserved inside the proof. No tokens move and the pool's custody is
+    /// unchanged — only commitments, a nullifier, and the root advance.
+    ///
+    /// Public signals, in circuit order: `[nullifierHash, outCommitment0, outCommitment1, stateRoot]`.
+    pub fn transfer(env: &Env, proof_bytes: Bytes, pub_signals_bytes: Bytes) -> Result<(), Error> {
+        let pub_signals = PublicSignals::from_bytes(env, &pub_signals_bytes);
+        let nullifier_hash = pub_signals.pub_signals.get(0).unwrap();
+        let out_commitment0 = pub_signals.pub_signals.get(1).unwrap();
+        let out_commitment1 = pub_signals.pub_signals.get(2).unwrap();
+        let state_root_fr = pub_signals.pub_signals.get(3).unwrap();
+
+        // 1. Anchor to a known root.
+        let state_root = state_root_fr.to_bytes();
+        if !Self::root_is_known(env, &state_root) {
+            return Err(Error::StaleRoot);
+        }
+
+        // 2. No nullifier reuse.
+        let nullifier = nullifier_hash.to_bytes();
+        if Self::nullifier_spent(env, &nullifier) {
+            return Err(Error::NullifierUsed);
+        }
+
+        // 3. Verify against the pinned transfer key.
+        let vk_bytes: Bytes = env.storage().instance().get(&TVK_KEY).unwrap();
+        let vk = VerificationKey::from_bytes(env, &vk_bytes).map_err(|_| Error::BadProof)?;
+        let proof = Proof::from_bytes(env, &proof_bytes);
+        let ok = Groth16Verifier::verify_proof(env, vk, proof, &pub_signals.pub_signals)
+            .map_err(|_| Error::BadProof)?;
+        if !ok {
+            return Err(Error::BadProof);
+        }
+
+        // 4. Commit: spend the input, append both outputs, advance the root.
+        Self::spend_nullifier(env, nullifier);
+        Self::append_commitment(env, out_commitment0.to_bytes())?;
+        let (new_root, _) = Self::append_commitment(env, out_commitment1.to_bytes())?;
+        Self::record_root(env, new_root);
         Ok(())
     }
 

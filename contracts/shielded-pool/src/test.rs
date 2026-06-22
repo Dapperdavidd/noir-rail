@@ -24,9 +24,16 @@ fn setup() -> (Env, ShieldedPoolClient<'static>, Address, Address) {
     // Deploy the pool. The verification key is irrelevant to the deposit path, so an empty
     // blob is fine here; withdraw is exercised end-to-end on testnet with a real key.
     let vk_bytes = Bytes::new(&env);
+    let transfer_vk_bytes = Bytes::new(&env);
     let pool_id = env.register(
         ShieldedPool,
-        (vk_bytes, token_addr.clone(), admin.clone(), 1u32),
+        (
+            vk_bytes,
+            transfer_vk_bytes,
+            token_addr.clone(),
+            admin.clone(),
+            1u32,
+        ),
     );
     let client = ShieldedPoolClient::new(&env, &pool_id);
 
