@@ -2,3 +2,5 @@ packages:
   - "circuits"
   - "packages/*"
   - "web"
+allowBuilds:
+  sharp: true
