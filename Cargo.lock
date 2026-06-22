@@ -1621,7 +1621,6 @@ dependencies = [
 name = "shielded-pool"
 version = "0.1.0"
 dependencies = [
- "lean-imt",
  "soroban-poseidon",
  "soroban-sdk",
  "zk",

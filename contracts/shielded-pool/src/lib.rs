@@ -13,13 +13,19 @@
 //! - **Arbitrary value.** The deposited token amount is bound into the note commitment by
 //!   recomputing the leaf on-chain with the same Poseidon the circuit uses, so a note is worth
 //!   exactly what was deposited. (The prototype was a fixed-denomination mixer.)
-//! - **Root-history ring buffer.** A proof anchored to a recent root stays valid as the tree
-//!   grows, instead of going stale on the very next deposit.
+//! - **Frontier Merkle tree.** Inserts are O(depth) and persistent across transactions (the
+//!   classic "filled subtrees" frontier), so multi-deposit and transfer both stay within the
+//!   per-transaction instruction budget. The prototype recomputed from the leaf set on each load,
+//!   which is exponential for cold inserts into a non-empty tree.
+//! - **Root-history ring buffer.** A proof anchored to a recent root stays valid as the tree grows.
 //! - **Nullifier map** (O(1) membership) instead of a linearly-scanned vector.
 //! - **Recipient binding** (frontrunning fix). The recipient is a public input bound inside the
-//!   circuit; the contract checks the proof's recipient signal equals the actual payout address,
-//!   so a watcher who copies a pending proof cannot redirect the funds.
+//!   circuit; the contract checks the proof's recipient signal equals the actual payout address.
 //! - **Typed `Result` errors** on the settlement path.
+//!
+//! The frontier produces the *same* zero-padded fixed-depth root the circuit, SDK, and `noterail`
+//! compute (same Poseidon, same zero ladder, left child = lower index), so nothing off-chain
+//! needs to change.
 
 extern crate alloc;
 
@@ -29,7 +35,6 @@ use soroban_sdk::{
     Address, Bytes, BytesN, Env, Symbol, U256, Vec,
 };
 
-use lean_imt::{LeanIMT, TREE_DEPTH_KEY, TREE_LEAVES_KEY, TREE_ROOT_KEY};
 use soroban_poseidon::poseidon_hash;
 use zk::{Groth16Verifier, Proof, PublicSignals, VerificationKey};
 
@@ -38,10 +43,10 @@ mod test;
 
 /// Depth of the commitment tree. 2^14 = 16,384 notes per pool. Sized so a transfer's two on-chain
 /// Merkle inserts fit alongside the Groth16 pairing within the per-tx instruction budget; raising
-/// it is a Phase-1 task (persistent subtree cache or CAP-0075 host Poseidon). Must equal the depth
-/// baked into the circuits and the SDK.
+/// it is a Phase-1 task (CAP-0075 host Poseidon). Must equal the depth baked into the circuits,
+/// the SDK, and `noterail`.
 const TREE_DEPTH: u32 = 14;
-/// Number of recent roots retained so in-flight proofs survive concurrent deposits.
+/// Number of recent roots retained so in-flight proofs survive concurrent settlements.
 const ROOT_HISTORY_SIZE: u32 = 32;
 
 // --- storage keys ---
@@ -52,6 +57,11 @@ const TOKEN_KEY: Symbol = symbol_short!("token");
 const ASSET_KEY: Symbol = symbol_short!("asset");
 const NULL_KEY: Symbol = symbol_short!("null");
 const ROOTS_KEY: Symbol = symbol_short!("roots");
+const ROOT_KEY: Symbol = symbol_short!("mroot"); // current Merkle root
+const FILLED_KEY: Symbol = symbol_short!("filled"); // frontier: left-sibling per level
+const ZEROS_KEY: Symbol = symbol_short!("zeros"); // empty-subtree hash per level
+const NEXTIDX_KEY: Symbol = symbol_short!("nextidx"); // next free leaf index
+const LEAVES_KEY: Symbol = symbol_short!("leaves"); // appended commitments (for the indexer/SDK)
 
 #[contracterror]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
@@ -80,9 +90,8 @@ pub struct ShieldedPool;
 
 #[contractimpl]
 impl ShieldedPool {
-    /// Wires the pool to its verification key, its underlying SAC, an admin, and the asset id
-    /// it serves. The verification key is pinned at deploy and is never caller-supplied
-    /// thereafter — settlement always verifies against this exact key.
+    /// Wires the pool to its verification keys, its underlying SAC, an admin, and the asset id.
+    /// The keys are pinned at deploy and are never caller-supplied thereafter.
     pub fn __constructor(
         env: &Env,
         vk_bytes: Bytes,
@@ -97,28 +106,38 @@ impl ShieldedPool {
         env.storage().instance().set(&TOKEN_KEY, &token_address);
         env.storage().instance().set(&ASSET_KEY, &asset_id);
 
-        // Empty commitment tree.
-        let tree = LeanIMT::new(env, TREE_DEPTH);
-        let (leaves, depth, root) = tree.to_storage();
-        env.storage().instance().set(&TREE_LEAVES_KEY, &leaves);
-        env.storage().instance().set(&TREE_DEPTH_KEY, &depth);
-        env.storage().instance().set(&TREE_ROOT_KEY, &root);
+        // Build the zero-subtree ladder and seed an empty frontier.
+        let mut zeros: Vec<BytesN<32>> = Vec::new(env);
+        let mut filled: Vec<BytesN<32>> = Vec::new(env);
+        let mut z = BytesN::from_array(env, &[0u8; 32]);
+        let mut level = 0u32;
+        while level < TREE_DEPTH {
+            zeros.push_back(z.clone());
+            filled.push_back(z.clone());
+            z = Self::hash2(env, &z, &z);
+            level += 1;
+        }
+        zeros.push_back(z.clone()); // zeros[depth] = empty root
+        let empty_root = z;
 
-        // Seed the root history with the empty root.
+        env.storage().instance().set(&ZEROS_KEY, &zeros);
+        env.storage().instance().set(&FILLED_KEY, &filled);
+        env.storage().instance().set(&NEXTIDX_KEY, &0u32);
+        env.storage().instance().set(&ROOT_KEY, &empty_root);
+        env.storage().instance().set(&LEAVES_KEY, &Vec::<BytesN<32>>::new(env));
+
         let mut roots: Vec<BytesN<32>> = Vec::new(env);
-        roots.push_back(root);
+        roots.push_back(empty_root);
         env.storage().instance().set(&ROOTS_KEY, &roots);
     }
 
     /// **Shield.** Deposit `amount` of the pool's token and append the note commitment.
     ///
-    /// The caller supplies the public parts of the note — its `label` (pool scope ‖ nonce) and
-    /// its `precommitment` (= Poseidon(nullifier, secret)) — and the *transparent* `amount`.
-    /// The contract recomputes the leaf `c = Poseidon(amount, label, precommitment)` itself,
-    /// using the same Poseidon as the circuit, so the hidden note value provably equals the
-    /// tokens actually escrowed. The owner-identifying parts (nullifier, secret) never appear.
-    ///
-    /// Returns the leaf index of the new commitment.
+    /// The caller supplies the public parts of the note — its `label` (pool scope ‖ nonce) and its
+    /// `precommitment` (= Poseidon(nullifier, secret)) — and the *transparent* `amount`. The
+    /// contract recomputes the leaf `c = Poseidon(amount, label, precommitment)` itself, so the
+    /// hidden note value provably equals the tokens escrowed. The owner-identifying parts never
+    /// appear. Returns the leaf index.
     pub fn deposit(
         env: &Env,
         from: Address,
@@ -131,15 +150,12 @@ impl ShieldedPool {
             return Err(Error::NonPositiveAmount);
         }
 
-        // Escrow the underlying asset.
         let token_address: Address = env.storage().instance().get(&TOKEN_KEY).unwrap();
         let token_client = token::Client::new(env, &token_address);
         token_client.transfer(&from, &env.current_contract_address(), &amount);
 
-        // Bind value into the commitment by recomputing the leaf on-chain.
         let leaf = Self::commitment(env, amount, &label, &precommitment);
-
-        let (new_root, leaf_index) = Self::append_commitment(env, leaf)?;
+        let (new_root, leaf_index) = Self::merkle_insert(env, leaf)?;
         Self::record_root(env, new_root);
         Ok(leaf_index)
     }
@@ -147,8 +163,6 @@ impl ShieldedPool {
     /// **Unshield.** Release `withdrawnValue` of the token to `to`, against a valid spend proof.
     ///
     /// Public signals, in circuit order: `[nullifierHash, withdrawnValue, stateRoot, recipient]`.
-    /// The flow is: anchor to a known root, enforce recipient binding, reject a reused nullifier,
-    /// verify the single Groth16 proof, then commit (spend the nullifier, pay out).
     pub fn withdraw(
         env: &Env,
         to: Address,
@@ -163,50 +177,44 @@ impl ShieldedPool {
         let state_root_fr = pub_signals.pub_signals.get(2).unwrap();
         let recipient_fr = pub_signals.pub_signals.get(3).unwrap();
 
-        // 1. The proof must anchor to a root we published recently.
-        let state_root = state_root_fr.to_bytes();
-        if !Self::root_is_known(env, &state_root) {
+        // 1. Anchor to a known root.
+        if !Self::root_is_known(env, &state_root_fr.to_bytes()) {
             return Err(Error::StaleRoot);
         }
-
-        // 2. Recipient binding: the proof's recipient must be the actual payout address.
-        let expected_recipient = Self::address_to_fr(env, &to);
-        if recipient_fr != expected_recipient {
+        // 2. Recipient binding.
+        if recipient_fr != Self::address_to_fr(env, &to) {
             return Err(Error::RecipientMismatch);
         }
-
-        // 3. No nullifier may be reused.
+        // 3. No nullifier reuse.
         let nullifier = nullifier_hash.to_bytes();
         if Self::nullifier_spent(env, &nullifier) {
             return Err(Error::NullifierUsed);
         }
-
         // 4. Verify exactly one Groth16 proof against the pinned key.
         let vk_bytes: Bytes = env.storage().instance().get(&VK_KEY).unwrap();
         let vk = VerificationKey::from_bytes(env, &vk_bytes).map_err(|_| Error::BadProof)?;
         let proof = Proof::from_bytes(env, &proof_bytes);
-        let ok = Groth16Verifier::verify_proof(env, vk, proof, &pub_signals.pub_signals)
-            .map_err(|_| Error::BadProof)?;
-        if !ok {
+        if !Groth16Verifier::verify_proof(env, vk, proof, &pub_signals.pub_signals)
+            .map_err(|_| Error::BadProof)?
+        {
             return Err(Error::BadProof);
         }
 
-        // 5. Commit. Convert the field-element amount back to a token amount and pay out.
-        let amount = Self::fr_to_i128(env, &withdrawn_value_fr)?;
+        // 5. Commit: spend the nullifier, pay out.
+        let amount = Self::fr_to_i128(&withdrawn_value_fr)?;
         let token_address: Address = env.storage().instance().get(&TOKEN_KEY).unwrap();
         let token_client = token::Client::new(env, &token_address);
         if token_client.balance(&env.current_contract_address()) < amount {
             return Err(Error::InsufficientBalance);
         }
-
         Self::spend_nullifier(env, nullifier);
         token_client.transfer(&env.current_contract_address(), &to, &amount);
         Ok(())
     }
 
     /// **Transfer.** Private → private settlement: spend one input note and append two output
-    /// notes, with value conserved inside the proof. No tokens move and the pool's custody is
-    /// unchanged — only commitments, a nullifier, and the root advance.
+    /// notes, value conserved inside the proof. No tokens move; only commitments, a nullifier, and
+    /// the root advance.
     ///
     /// Public signals, in circuit order: `[nullifierHash, outCommitment0, outCommitment1, stateRoot]`.
     pub fn transfer(env: &Env, proof_bytes: Bytes, pub_signals_bytes: Bytes) -> Result<(), Error> {
@@ -216,32 +224,26 @@ impl ShieldedPool {
         let out_commitment1 = pub_signals.pub_signals.get(2).unwrap();
         let state_root_fr = pub_signals.pub_signals.get(3).unwrap();
 
-        // 1. Anchor to a known root.
-        let state_root = state_root_fr.to_bytes();
-        if !Self::root_is_known(env, &state_root) {
+        if !Self::root_is_known(env, &state_root_fr.to_bytes()) {
             return Err(Error::StaleRoot);
         }
-
-        // 2. No nullifier reuse.
         let nullifier = nullifier_hash.to_bytes();
         if Self::nullifier_spent(env, &nullifier) {
             return Err(Error::NullifierUsed);
         }
-
-        // 3. Verify against the pinned transfer key.
         let vk_bytes: Bytes = env.storage().instance().get(&TVK_KEY).unwrap();
         let vk = VerificationKey::from_bytes(env, &vk_bytes).map_err(|_| Error::BadProof)?;
         let proof = Proof::from_bytes(env, &proof_bytes);
-        let ok = Groth16Verifier::verify_proof(env, vk, proof, &pub_signals.pub_signals)
-            .map_err(|_| Error::BadProof)?;
-        if !ok {
+        if !Groth16Verifier::verify_proof(env, vk, proof, &pub_signals.pub_signals)
+            .map_err(|_| Error::BadProof)?
+        {
             return Err(Error::BadProof);
         }
 
-        // 4. Commit: spend the input, append both outputs, advance the root.
+        // Commit: spend the input, append both outputs, advance the root.
         Self::spend_nullifier(env, nullifier);
-        let new_root =
-            Self::append_pair(env, out_commitment0.to_bytes(), out_commitment1.to_bytes())?;
+        Self::merkle_insert(env, out_commitment0.to_bytes())?;
+        let (new_root, _) = Self::merkle_insert(env, out_commitment1.to_bytes())?;
         Self::record_root(env, new_root);
         Ok(())
     }
@@ -251,7 +253,7 @@ impl ShieldedPool {
     pub fn get_merkle_root(env: &Env) -> BytesN<32> {
         env.storage()
             .instance()
-            .get(&TREE_ROOT_KEY)
+            .get(&ROOT_KEY)
             .unwrap_or(BytesN::from_array(env, &[0u8; 32]))
     }
 
@@ -260,19 +262,11 @@ impl ShieldedPool {
     }
 
     pub fn get_commitment_count(env: &Env) -> u32 {
-        let leaves: Vec<BytesN<32>> = env
-            .storage()
-            .instance()
-            .get(&TREE_LEAVES_KEY)
-            .unwrap_or(Vec::new(env));
-        leaves.len()
+        env.storage().instance().get(&NEXTIDX_KEY).unwrap_or(0)
     }
 
     pub fn get_commitments(env: &Env) -> Vec<BytesN<32>> {
-        env.storage()
-            .instance()
-            .get(&TREE_LEAVES_KEY)
-            .unwrap_or(Vec::new(env))
+        env.storage().instance().get(&LEAVES_KEY).unwrap_or(Vec::new(env))
     }
 
     pub fn is_nullifier_spent(env: &Env, nullifier: BytesN<32>) -> bool {
@@ -294,73 +288,65 @@ impl ShieldedPool {
 
     // --- internal helpers ---
 
-    /// `c = Poseidon(value, label, precommitment)` — byte-identical to the circuit and to the
-    /// off-chain note generator, because all three call the same `soroban-poseidon`.
+    /// `c = Poseidon(value, label, precommitment)` — byte-identical to the circuit and the
+    /// off-chain note generator (all three call the same `soroban-poseidon`, t = 4).
     fn commitment(env: &Env, amount: i128, label: &BytesN<32>, precommitment: &BytesN<32>) -> BytesN<32> {
-        let value_u = Self::i128_to_u256(env, amount);
-        let label_u = U256::from_be_bytes(env, &Bytes::from_array(env, &label.to_array()));
-        let pre_u = U256::from_be_bytes(env, &Bytes::from_array(env, &precommitment.to_array()));
-
         let mut inputs: Vec<U256> = Vec::new(env);
-        inputs.push_back(value_u);
-        inputs.push_back(label_u);
-        inputs.push_back(pre_u);
-
-        // 3 inputs → state size t = 4.
-        let out = poseidon_hash::<4, Fr>(env, &inputs);
-        Fr::from_u256(out).to_bytes()
+        inputs.push_back(Self::i128_to_u256(env, amount));
+        inputs.push_back(U256::from_be_bytes(env, &Bytes::from_array(env, &label.to_array())));
+        inputs.push_back(U256::from_be_bytes(env, &Bytes::from_array(env, &precommitment.to_array())));
+        Fr::from_u256(poseidon_hash::<4, Fr>(env, &inputs)).to_bytes()
     }
 
-    fn append_commitment(env: &Env, leaf: BytesN<32>) -> Result<(BytesN<32>, u32), Error> {
-        let leaves: Vec<BytesN<32>> = env
-            .storage()
-            .instance()
-            .get(&TREE_LEAVES_KEY)
-            .unwrap_or(Vec::new(env));
-        let depth: u32 = env.storage().instance().get(&TREE_DEPTH_KEY).unwrap_or(0);
-        let root: BytesN<32> = env
-            .storage()
-            .instance()
-            .get(&TREE_ROOT_KEY)
-            .unwrap_or(BytesN::from_array(env, &[0u8; 32]));
-
-        let mut tree = LeanIMT::from_storage(env, leaves, depth, root);
-        tree.insert(leaf).map_err(|_| Error::TreeAtCapacity)?;
-        let leaf_index = tree.get_leaf_count() - 1;
-
-        let (new_leaves, new_depth, new_root) = tree.to_storage();
-        env.storage().instance().set(&TREE_LEAVES_KEY, &new_leaves);
-        env.storage().instance().set(&TREE_DEPTH_KEY, &new_depth);
-        env.storage().instance().set(&TREE_ROOT_KEY, &new_root);
-        Ok((new_root, leaf_index))
+    /// `Poseidon(left, right)` — the Merkle parent hash, matching `merkleProof.circom`'s
+    /// `Poseidon255(2)` (t = 3), with the lower-index child on the left.
+    fn hash2(env: &Env, left: &BytesN<32>, right: &BytesN<32>) -> BytesN<32> {
+        let mut inputs: Vec<U256> = Vec::new(env);
+        inputs.push_back(U256::from_be_bytes(env, &Bytes::from_array(env, &left.to_array())));
+        inputs.push_back(U256::from_be_bytes(env, &Bytes::from_array(env, &right.to_array())));
+        Fr::from_u256(poseidon_hash::<3, Fr>(env, &inputs)).to_bytes()
     }
 
-    /// Append two commitments through a single tree load/save. The Merkle cache stays warm across
-    /// both inserts (instead of recomputing the empty-subtree hashes on a second cold load), which
-    /// keeps a transfer's on-chain hashing — alongside the one Groth16 pairing — within the
-    /// per-transaction instruction budget.
-    fn append_pair(env: &Env, a: BytesN<32>, b: BytesN<32>) -> Result<BytesN<32>, Error> {
-        let leaves: Vec<BytesN<32>> = env
+    /// Append a leaf to the frontier Merkle tree in O(depth) hashes, persist the new frontier,
+    /// root, and leaf, and return (new_root, leaf_index).
+    fn merkle_insert(env: &Env, leaf: BytesN<32>) -> Result<(BytesN<32>, u32), Error> {
+        let idx: u32 = env.storage().instance().get(&NEXTIDX_KEY).unwrap_or(0);
+        if idx >= (1u32 << TREE_DEPTH) {
+            return Err(Error::TreeAtCapacity);
+        }
+        let zeros: Vec<BytesN<32>> = env.storage().instance().get(&ZEROS_KEY).unwrap();
+        let mut filled: Vec<BytesN<32>> = env.storage().instance().get(&FILLED_KEY).unwrap();
+
+        let mut cur = leaf.clone();
+        let mut running = idx;
+        let mut i = 0u32;
+        while i < TREE_DEPTH {
+            if running & 1 == 0 {
+                // Left child: this node becomes the left sibling for the next insertion.
+                filled.set(i, cur.clone());
+                let right = zeros.get(i).unwrap();
+                cur = Self::hash2(env, &cur, &right);
+            } else {
+                // Right child: pair with the stored left sibling.
+                let left = filled.get(i).unwrap();
+                cur = Self::hash2(env, &left, &cur);
+            }
+            running >>= 1;
+            i += 1;
+        }
+
+        let mut leaves: Vec<BytesN<32>> = env
             .storage()
             .instance()
-            .get(&TREE_LEAVES_KEY)
+            .get(&LEAVES_KEY)
             .unwrap_or(Vec::new(env));
-        let depth: u32 = env.storage().instance().get(&TREE_DEPTH_KEY).unwrap_or(0);
-        let root: BytesN<32> = env
-            .storage()
-            .instance()
-            .get(&TREE_ROOT_KEY)
-            .unwrap_or(BytesN::from_array(env, &[0u8; 32]));
+        leaves.push_back(leaf);
 
-        let mut tree = LeanIMT::from_storage(env, leaves, depth, root);
-        tree.insert(a).map_err(|_| Error::TreeAtCapacity)?;
-        tree.insert(b).map_err(|_| Error::TreeAtCapacity)?;
-
-        let (new_leaves, new_depth, new_root) = tree.to_storage();
-        env.storage().instance().set(&TREE_LEAVES_KEY, &new_leaves);
-        env.storage().instance().set(&TREE_DEPTH_KEY, &new_depth);
-        env.storage().instance().set(&TREE_ROOT_KEY, &new_root);
-        Ok(new_root)
+        env.storage().instance().set(&LEAVES_KEY, &leaves);
+        env.storage().instance().set(&FILLED_KEY, &filled);
+        env.storage().instance().set(&NEXTIDX_KEY, &(idx + 1));
+        env.storage().instance().set(&ROOT_KEY, &cur);
+        Ok((cur, idx))
     }
 
     /// Append `root` to the bounded ring buffer of recent roots.
@@ -400,26 +386,21 @@ impl ShieldedPool {
     fn address_to_fr(env: &Env, addr: &Address) -> Fr {
         let s = addr.to_string();
         let len = s.len() as usize;
-        // Stellar strkeys are 56 chars; cap defensively.
-        let mut buf = [0u8; 64];
+        let mut buf = [0u8; 64]; // strkeys are 56 chars; cap defensively
         s.copy_into_slice(&mut buf[..len]);
-        let bytes = Bytes::from_slice(env, &buf[..len]);
-        let hash = env.crypto().sha256(&bytes);
+        let hash = env.crypto().sha256(&Bytes::from_slice(env, &buf[..len]));
         let mut h = hash.to_bytes().to_array();
-        h[0] = 0; // ensure < field modulus
+        h[0] = 0;
         Fr::from_u256(U256::from_be_bytes(env, &Bytes::from_array(env, &h)))
     }
 
     fn i128_to_u256(env: &Env, amount: i128) -> U256 {
-        // amount is validated non-negative by callers.
         let mut buf = [0u8; 32];
-        let amt = (amount as u128).to_be_bytes();
-        buf[16..].copy_from_slice(&amt);
+        buf[16..].copy_from_slice(&(amount as u128).to_be_bytes());
         U256::from_be_bytes(env, &Bytes::from_array(env, &buf))
     }
 
-    fn fr_to_i128(env: &Env, fr: &Fr) -> Result<i128, Error> {
-        let _ = env;
+    fn fr_to_i128(fr: &Fr) -> Result<i128, Error> {
         let a = fr.to_bytes().to_array();
         if a[..16].iter().any(|&b| b != 0) {
             return Err(Error::ValueOverflow);

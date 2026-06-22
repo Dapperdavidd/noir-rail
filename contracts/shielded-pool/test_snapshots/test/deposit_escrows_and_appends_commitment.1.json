@@ -47,6 +47,111 @@
         }
       ]
     ],
+    [],
+    [],
+    [
+      [
+        "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
+        {
+          "function": {
+            "contract_fn": {
+              "contract_address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M",
+              "function_name": "deposit",
+              "args": [
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
+                },
+                {
+                  "i128": "2500000000"
+                },
+                {
+                  "bytes": "0707070707070707070707070707070707070707070707070707070707070707"
+                },
+                {
+                  "bytes": "0909090909090909090909090909090909090909090909090909090909090909"
+                }
+              ]
+            }
+          },
+          "sub_invocations": [
+            {
+              "function": {
+                "contract_fn": {
+                  "contract_address": "CBEPDNVYXQGWB5YUBXKJWYJA7OXTZW5LFLNO5JRRGE6Z6C5OSUZPCCEL",
+                  "function_name": "transfer",
+                  "args": [
+                    {
+                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
+                    },
+                    {
+                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
+                    },
+                    {
+                      "i128": "2500000000"
+                    }
+                  ]
+                }
+              },
+              "sub_invocations": []
+            }
+          ]
+        }
+      ]
+    ],
+    [],
+    [],
+    [],
+    [],
+    [
+      [
+        "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
+        {
+          "function": {
+            "contract_fn": {
+              "contract_address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M",
+              "function_name": "deposit",
+              "args": [
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
+                },
+                {
+                  "i128": "1000000000"
+                },
+                {
+                  "bytes": "0101010101010101010101010101010101010101010101010101010101010101"
+                },
+                {
+                  "bytes": "0202020202020202020202020202020202020202020202020202020202020202"
+                }
+              ]
+            }
+          },
+          "sub_invocations": [
+            {
+              "function": {
+                "contract_fn": {
+                  "contract_address": "CBEPDNVYXQGWB5YUBXKJWYJA7OXTZW5LFLNO5JRRGE6Z6C5OSUZPCCEL",
+                  "function_name": "transfer",
+                  "args": [
+                    {
+                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
+                    },
+                    {
+                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
+                    },
+                    {
+                      "i128": "1000000000"
+                    }
+                  ]
+                }
+              },
+              "sub_invocations": []
+            }
+          ]
+        }
+      ]
+    ],
+    [],
     []
   ],
   "ledger": {
@@ -158,46 +263,46 @@
                       "val": {
                         "vec": [
                           {
-                            "bytes": "0000000000000000000000000000000000000000000000000000000000000000"
+                            "bytes": "53d26fc692171fc4cf926d4e3b45c4e9fbbcc92327f7be101b1a0be72b56ff33"
                           },
                           {
-                            "bytes": "720772992425c4618eaf8a7ff4b6ad5333a76fe17dd3624e2329a57dfaaa505e"
+                            "bytes": "5a075492ef2ff10014ab11977d9a612a73795b7e293151fe3428013ac5bbcdd4"
                           },
                           {
-                            "bytes": "4a631147afb4978b80f7d8c40526ca2815e3587a088011ed24d11215d549fe88"
+                            "bytes": "35348db1d3097c625aab5eebf6b37e16684ade335b925ca50630ec7a383bd67c"
                           },
                           {
-                            "bytes": "3d80cb9c131f7c003cfb82ad7580b88420c216204962cf952256dc785ff68839"
+                            "bytes": "4cd54b6bce66635c47320c1fba37ec704063fc35d5918e641ccda155d2ad6591"
                           },
                           {
-                            "bytes": "571de3db51ffb4a0181a0b56a613726377dbd093265c4c3800f6c4595079c5c8"
+                            "bytes": "272ca92da538f640a8aab067682fef8ae8e10ac967a0f76f372c3c8bc0819cf3"
                           },
                           {
-                            "bytes": "3710eeae180bad05ae19ce0bcc836ad2dee7fb9835a00f2ac4675466a0eef347"
+                            "bytes": "3646837794c2a350427ffb33f47f5f1a7d26d46e7b7fb00473dc7d8dcf073cec"
                           },
                           {
-                            "bytes": "30de0f3432e12933f0fe438a960eeb42855c7d666a378b2ebc43aff37c52d053"
+                            "bytes": "6ee341e7535999b9cbd239130107cb9c8a4ac098c7f05756105358b774c816a9"
                           },
                           {
-                            "bytes": "3f6004a2a18568e13c38e4cafe62cb89f10142516f1c217617885d33a54e4dff"
+                            "bytes": "28d284cdffa840a4b4c7843a6e2e4608139542da861faa19faa3558530822990"
                           },
                           {
-                            "bytes": "0f014e0c4bc64f4b27d439c1d94837f99e4d9df3a4c9a062c5294c1a0842eea1"
+                            "bytes": "32f2ccecdd30c5ba959fd21a46d7f636e7367c13c2c7ca3176e57a51a9e9038a"
                           },
                           {
-                            "bytes": "70bf7834ccd244e48fa857920f61b6202cd1dcf49e3017164c82c30ff56cec99"
+                            "bytes": "0db2e04d84dd110f748aea17ae283b7aa300b0ae2ec7a5f3d7acc7514d60e308"
                           },
                           {
-                            "bytes": "1ec4b50cea868b8ae6ac178b403ed3bcc9a2340e99e4ac0cff7ae09c51d4ca0b"
+                            "bytes": "0f4c2193344c8fdb6089b77e29dc305d09cc4124d1c99a2f53feb9dd32af1396"
                           },
                           {
-                            "bytes": "2950a7758b1c3583fa951dd305922403108abe2c0c41bb3f667fae3c53f8ac74"
+                            "bytes": "0cf61cab0ab50926ab311ddc13cb0e88415d9a5aca649236dd00d1f47f3f7849"
                           },
                           {
-                            "bytes": "0ce3a78a0131c84050bbe2205642f9e176ffe98488dbddb19336b987420f3bde"
+                            "bytes": "203edba39becb356c53d770240ada3148496ebc58caa55a9da77f70fdc119a8b"
                           },
                           {
-                            "bytes": "7035643ab6675732ddfe5eb93315c64468e118c7f3b6e0b31a0f9f9d9fc09582"
+                            "bytes": "6b2f18bed776d225d77c8fb91451b47ee1ac91646899075124c4b3b69a799e07"
                           }
                         ]
                       }
@@ -207,7 +312,14 @@
                         "symbol": "leaves"
                       },
                       "val": {
-                        "vec": []
+                        "vec": [
+                          {
+                            "bytes": "53d26fc692171fc4cf926d4e3b45c4e9fbbcc92327f7be101b1a0be72b56ff33"
+                          },
+                          {
+                            "bytes": "3d3b763ba2a6ee112005b032f65921c79c18c8481de58759c7fa9fe2e52144b8"
+                          }
+                        ]
                       }
                     },
                     {
@@ -215,7 +327,7 @@
                         "symbol": "mroot"
                       },
                       "val": {
-                        "bytes": "027aff7829dcd05a1c4881c4e2808cd6bfe601716d4c27b3b835c5210abdadca"
+                        "bytes": "41a8974033d7ef7edcc8b32f9c00753e9d27e57a8762f99d0970cf8a488e0ad9"
                       }
                     },
                     {
@@ -223,7 +335,7 @@
                         "symbol": "nextidx"
                       },
                       "val": {
-                        "u32": 0
+                        "u32": 2
                       }
                     },
                     {
@@ -234,6 +346,12 @@
                         "vec": [
                           {
                             "bytes": "027aff7829dcd05a1c4881c4e2808cd6bfe601716d4c27b3b835c5210abdadca"
+                          },
+                          {
+                            "bytes": "6bf5b4f46e1e07e5e4f04e2481ba9390edb1346cf7075bb1a890203913c88614"
+                          },
+                          {
+                            "bytes": "41a8974033d7ef7edcc8b32f9c00753e9d27e57a8762f99d0970cf8a488e0ad9"
                           }
                         ]
                       }
@@ -331,6 +449,98 @@
           "data": {
             "contract_data": {
               "ext": "v0",
+              "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
+              "key": {
+                "ledger_key_nonce": {
+                  "nonce": "1033654523790656264"
+                }
+              },
+              "durability": "temporary",
+              "val": "void"
+            }
+          },
+          "ext": "v0"
+        },
+        "live_until": 6311999
+      },
+      {
+        "entry": {
+          "last_modified_ledger_seq": 0,
+          "data": {
+            "contract_data": {
+              "ext": "v0",
+              "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
+              "key": {
+                "ledger_key_nonce": {
+                  "nonce": "4837995959683129791"
+                }
+              },
+              "durability": "temporary",
+              "val": "void"
+            }
+          },
+          "ext": "v0"
+        },
+        "live_until": 6311999
+      },
+      {
+        "entry": {
+          "last_modified_ledger_seq": 0,
+          "data": {
+            "contract_data": {
+              "ext": "v0",
+              "contract": "CBEPDNVYXQGWB5YUBXKJWYJA7OXTZW5LFLNO5JRRGE6Z6C5OSUZPCCEL",
+              "key": {
+                "vec": [
+                  {
+                    "symbol": "Balance"
+                  },
+                  {
+                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
+                  }
+                ]
+              },
+              "durability": "persistent",
+              "val": {
+                "map": [
+                  {
+                    "key": {
+                      "symbol": "amount"
+                    },
+                    "val": {
+                      "i128": "3500000000"
+                    }
+                  },
+                  {
+                    "key": {
+                      "symbol": "authorized"
+                    },
+                    "val": {
+                      "bool": true
+                    }
+                  },
+                  {
+                    "key": {
+                      "symbol": "clawback"
+                    },
+                    "val": {
+                      "bool": false
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "ext": "v0"
+        },
+        "live_until": 518400
+      },
+      {
+        "entry": {
+          "last_modified_ledger_seq": 0,
+          "data": {
+            "contract_data": {
+              "ext": "v0",
               "contract": "CBEPDNVYXQGWB5YUBXKJWYJA7OXTZW5LFLNO5JRRGE6Z6C5OSUZPCCEL",
               "key": {
                 "vec": [
@@ -350,7 +560,7 @@
                       "symbol": "amount"
                     },
                     "val": {
-                      "i128": "10000000000"
+                      "i128": "6500000000"
                     }
                   },
                   {
