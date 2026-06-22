@@ -22,8 +22,8 @@ function hexToBytes(hex: string): Uint8Array {
   return out;
 }
 
-const bytesScVal = (hex: string) =>
-  xdr.ScVal.scvBytes(Buffer.from(hexToBytes(hex)));
+// nativeToScVal uses stellar-sdk's bundled Buffer, so this avoids a global Buffer dependency.
+const bytesScVal = (hex: string) => nativeToScVal(hexToBytes(hex), { type: "bytes" });
 const i128ScVal = (v: bigint) => nativeToScVal(v, { type: "i128" });
 const addrScVal = (pk: string) => new Address(pk).toScVal();
 
