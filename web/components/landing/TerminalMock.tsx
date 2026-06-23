@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { ShieldedValue } from "./ui";
 
 /** A floating, lightly-alive mock of the NoirRail settlement terminal — the hero centerpiece. */
@@ -32,7 +32,10 @@ export function TerminalMock() {
   }, [reduce]);
 
   return (
-    <div className="lp-window" style={{ position: "relative" }}>
+    <div
+      className="lp-window torch"
+      style={{ position: "relative", ["--torch" as string]: "rgba(91,217,210,0.13)", ["--accent" as string]: "rgba(91,217,210,0.45)" } as CSSProperties}
+    >
       {!reduce && <div className="lp-scanline" />}
       <div className="lp-chrome">
         <div className="lp-dots">

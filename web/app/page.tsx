@@ -7,6 +7,45 @@ import { Reveal, Magnetic, Parallax, Counter } from "@/components/landing/ui.tsx
 import { TerminalMock } from "@/components/landing/TerminalMock.tsx";
 
 export default function Landing() {
+  // Torchlight: one delegated listener writes the cursor position into the hovered card's
+  // CSS vars (--mx/--my), so the .torch glow follows the cursor across every card-like surface.
+  useEffect(() => {
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    const onMove = (e: PointerEvent) => {
+      const el = (e.target as HTMLElement | null)?.closest?.(".torch") as HTMLElement | null;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      el.style.setProperty("--mx", `${e.clientX - r.left}px`);
+      el.style.setProperty("--my", `${e.clientY - r.top}px`);
+    };
+    window.addEventListener("pointermove", onMove, { passive: true });
+    return () => window.removeEventListener("pointermove", onMove);
+  }, []);
+
+  // Always open at the top, and make in-page links smooth-scroll WITHOUT writing a #hash to the
+  // URL — so a reload never lands mid-page (e.g. on the architecture section).
+  useEffect(() => {
+    if ("scrollRestoration" in window.history) window.history.scrollRestoration = "manual";
+    if (window.location.hash) {
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+    window.scrollTo(0, 0);
+
+    const onClick = (e: MouseEvent) => {
+      const a = (e.target as HTMLElement | null)?.closest?.('a[href^="#"]') as HTMLAnchorElement | null;
+      if (!a) return;
+      e.preventDefault();
+      const href = a.getAttribute("href") || "";
+      if (href === "#" || href === "#top") {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+      document.getElementById(href.slice(1))?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    document.addEventListener("click", onClick);
+    return () => document.removeEventListener("click", onClick);
+  }, []);
+
   return (
     <main className="lp">
       <Background />
@@ -53,9 +92,17 @@ function Nav() {
     <nav className={`lp-nav ${scrolled ? "scrolled" : ""}`}>
       <div className="lp-container">
         <div className="lp-nav-inner">
-          <Link href="/" className="lp-wordmark">
+          <a
+            href="/"
+            className="lp-wordmark"
+            onClick={(e) => {
+              e.preventDefault();
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            aria-label="NoirRail — back to top"
+          >
             Noir<em>Rail</em>
-          </Link>
+          </a>
           <div className="lp-navlinks">
             <a className="lp-navlink" href="#features">Product</a>
             <a className="lp-navlink" href="#how">How it works</a>
@@ -98,7 +145,7 @@ function Hero() {
               NoirRail shields tokenized treasuries, invoices, and credit on Stellar. Amounts and
               positions hide behind zero-knowledge proofs — openable on demand, in proof, to your
               auditor. A rail you can see through, but no one can{" "}
-              <span style={{ color: "var(--cyan)", fontStyle: "italic" }}>see into</span>.
+              <span style={{ color: "var(--cyan)", fontWeight: 500 }}>see into</span>.
             </p>
           </Reveal>
           <Reveal delay={0.22}>
@@ -230,7 +277,7 @@ function Features() {
         </Reveal>
         <div className="lp-bento">
           {FEATURES.map((f, i) => (
-            <Reveal key={i} delay={(i % 3) * 0.06} className={`lp-tile ${f.cls}`} style={{ "--accent": f.accent } as CSSProperties}>
+            <Reveal key={i} delay={(i % 3) * 0.06} className={`lp-tile torch ${f.cls}`} style={{ "--accent": f.accent } as CSSProperties}>
               <div className="ic" aria-hidden>{f.ic}</div>
               <h3>{f.t}</h3>
               <p>{f.d}</p>
@@ -284,7 +331,7 @@ function SettlementPath() {
 
         <div className="lp-steps">
           {STEPS.map((s, i) => (
-            <Reveal key={i} delay={i * 0.08} className="lp-step">
+            <Reveal key={i} delay={i * 0.08} className="lp-step torch">
               <div>
                 <div className="n">{s.n}</div>
                 <h3>{s.h}</h3>
@@ -300,7 +347,7 @@ function SettlementPath() {
 
 function ChainView() {
   return (
-    <div className="lp-window">
+    <div className="lp-window torch" style={{ "--torch": "rgba(91,217,210,0.16)", "--accent": "rgba(91,217,210,0.5)" } as CSSProperties}>
       <div className="lp-chrome">
         <div className="lp-dots"><i /><i /><i /></div>
         <div className="lp-urlbar">what the chain remembers</div>
@@ -437,7 +484,7 @@ function FinalCTA() {
     <section className="lp-section">
       <div className="lp-container">
         <Reveal y={30}>
-          <div className="lp-final">
+          <div className="lp-final torch">
             <div className="lp-glow amber" style={{ width: 420, height: 220, top: -60, left: "50%", transform: "translateX(-50%)", opacity: 0.4 }} />
             <p className="lp-eyebrow center" style={{ justifyContent: "center", marginBottom: 24 }}>See for yourself</p>
             <h2 className="lp-h2" style={{ maxWidth: "20ch", margin: "0 auto 20px" }}>

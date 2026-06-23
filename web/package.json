@@ -12,6 +12,7 @@
   "dependencies": {
     "@noir-rail/sdk": "workspace:*",
     "@stellar/stellar-sdk": "^14.2.0",
+    "geist": "^1.7.2",
     "motion": "^12.40.0",
     "next": "^16.0.0",
     "react": "^19.0.0",

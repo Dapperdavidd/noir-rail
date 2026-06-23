@@ -1,17 +1,11 @@
 import type { Metadata } from "next";
-import { Fraunces, Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
+import { Inter } from "next/font/google";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  variable: "--font-display",
-  weight: ["400", "500", "600"],
-  style: ["normal", "italic"],
-  display: "swap",
-});
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
-const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono", display: "swap" });
-const grotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-eyebrow", display: "swap" });
+// Raycast-native system: Geist for headings, Inter for UI/body, Geist Mono for technical/numerics.
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 
 export const metadata: Metadata = {
   title: "NoirRail — Real-world value, settled in the dark",
@@ -22,9 +16,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body
-        className={`${fraunces.variable} ${inter.variable} ${mono.variable} ${grotesk.variable}`}
-      >
+      <body className={`${GeistSans.variable} ${GeistMono.variable} ${inter.variable}`}>
         {children}
       </body>
     </html>

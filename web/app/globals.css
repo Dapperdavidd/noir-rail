@@ -40,10 +40,11 @@
   --r2: 8px;
   --r3: 12px;
 
-  --font-display: Georgia, serif;
-  --font-sans: system-ui, sans-serif;
-  --font-mono: ui-monospace, monospace;
-  --font-eyebrow: system-ui, sans-serif;
+  /* Raycast-native type system — no serif anywhere. */
+  --font-display: var(--font-geist-sans), system-ui, -apple-system, sans-serif; /* headings */
+  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;         /* UI / body */
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", monospace;      /* technical */
+  --font-eyebrow: var(--font-inter), system-ui, -apple-system, sans-serif;      /* labels */
 
   --ring: 0 0 0 1px rgba(231, 178, 92, 0.5), 0 0 0 4px rgba(231, 178, 92, 0.12);
 }
@@ -94,7 +95,7 @@ body {
 
 /* ---- typography ---- */
 .display {
-  font-family: var(--font-display), Georgia, serif;
+  font-family: var(--font-display), system-ui, sans-serif;
   font-weight: 400;
   letter-spacing: -0.02em;
   line-height: 1.04;
@@ -359,7 +360,7 @@ body {
    (scroll reveals, magnetic, parallax) lives in the motion components.
    ============================================================================ */
 
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
 ::selection { background: rgba(231, 178, 92, 0.22); color: var(--ink); }
 
@@ -396,8 +397,8 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
   background: rgba(12, 14, 18, 0.72); backdrop-filter: blur(16px) saturate(140%);
   border: 1px solid var(--line); box-shadow: 0 12px 40px rgba(0,0,0,0.4);
 }
-.lp-wordmark { font-family: var(--font-display), Georgia, serif; font-size: 22px; letter-spacing: -0.02em; color: var(--ink); }
-.lp-wordmark em { color: var(--amber); font-style: italic; }
+.lp-wordmark { font-family: var(--font-display), system-ui, sans-serif; font-weight: 600; font-size: 20px; letter-spacing: -0.03em; color: var(--ink); }
+.lp-wordmark em { color: var(--amber); font-weight: 600; font-style: normal; }
 .lp-navlinks { display: flex; align-items: center; gap: 28px; }
 .lp-navlink { font-size: 14px; color: var(--ink-3); transition: color 0.2s; position: relative; }
 .lp-navlink:hover { color: var(--ink); }
@@ -408,12 +409,12 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
 .lp-eyebrow { font-family: var(--font-eyebrow), system-ui, sans-serif; font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink-3); display: inline-flex; align-items: center; gap: 10px; }
 .lp-eyebrow::before { content: ""; width: 22px; height: 1px; background: var(--amber); }
 .lp-eyebrow.center::before { display: none; }
-.lp-h1 { font-family: var(--font-display), Georgia, serif; font-weight: 500; font-size: clamp(40px, 7vw, 84px); line-height: 1.02; letter-spacing: -0.03em; color: var(--ink); }
-.lp-h1 em { font-style: italic; color: var(--amber); }
-.lp-h1 .seal { color: var(--cyan); font-style: italic; }
-.lp-h2 { font-family: var(--font-display), Georgia, serif; font-weight: 500; font-size: clamp(30px, 4.6vw, 52px); line-height: 1.06; letter-spacing: -0.025em; color: var(--ink); }
-.lp-h2 em { font-style: italic; color: var(--amber); }
-.lp-h3 { font-family: var(--font-display), Georgia, serif; font-weight: 500; font-size: 22px; letter-spacing: -0.015em; color: var(--ink); }
+.lp-h1 { font-family: var(--font-display), system-ui, sans-serif; font-weight: 600; font-size: clamp(44px, 7.4vw, 88px); line-height: 1.0; letter-spacing: -0.045em; color: var(--ink); }
+.lp-h1 em { font-style: normal; font-weight: 650; color: var(--amber); }
+.lp-h1 .seal { color: var(--cyan); font-style: normal; }
+.lp-h2 { font-family: var(--font-display), system-ui, sans-serif; font-weight: 600; font-size: clamp(30px, 4.6vw, 52px); line-height: 1.05; letter-spacing: -0.035em; color: var(--ink); }
+.lp-h2 em { font-style: normal; font-weight: 650; color: var(--amber); }
+.lp-h3 { font-family: var(--font-display), system-ui, sans-serif; font-weight: 600; font-size: 22px; letter-spacing: -0.02em; color: var(--ink); }
 .lp-lead { font-size: clamp(17px, 2.1vw, 21px); line-height: 1.55; color: var(--ink-2); max-width: 60ch; }
 .lp-body { font-size: 15px; line-height: 1.65; color: var(--ink-2); }
 .lp-kicker { color: var(--ink-3); max-width: 54ch; }
@@ -455,11 +456,32 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
 .lp-tile.wide { grid-column: span 3; }
 .lp-tile.full { grid-column: span 6; }
 .lp-tile:hover { border-color: var(--line-2); transform: translateY(-2px); }
-.lp-tile::after { content: ""; position: absolute; width: 240px; height: 240px; border-radius: 50%; top: -120px; right: -80px;
-  filter: blur(60px); opacity: 0; transition: opacity 0.4s; background: radial-gradient(circle, var(--accent, rgba(231,178,92,0.4)), transparent 70%); }
-.lp-tile:hover::after { opacity: 0.5; }
+
+/* Torchlight: a soft radial glow that tracks the cursor across any card-like surface.
+   A single delegated pointermove listener (see page.tsx) writes --mx/--my per hovered card.
+   The glow sits above the card's opaque background but below its content (lifted to z-index 1),
+   so text stays crisp. Cards opt in with the `torch` class. */
+.torch { position: relative; isolation: isolate; }
+.torch::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 0;
+  opacity: 0; transition: opacity 0.5s ease;
+  background: radial-gradient(200px circle at var(--mx, -400px) var(--my, -400px),
+    var(--torch, var(--accent, rgba(231, 178, 92, 0.14))), transparent 58%);
+}
+.torch:hover::after { opacity: 0.5; }
+.torch > * { position: relative; z-index: 1; }
+/* a faint border that lights up near the cursor, like an edge catching the torch */
+.torch::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 0;
+  opacity: 0; transition: opacity 0.5s ease; padding: 1px;
+  background: radial-gradient(170px circle at var(--mx, -400px) var(--my, -400px),
+    var(--torch-edge, var(--accent, rgba(231, 178, 92, 0.4))), transparent 60%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+}
+.torch:hover::before { opacity: 0.45; }
 .lp-tile .ic { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 18px; border: 1px solid var(--line-2); background: rgba(255,255,255,0.02); font-size: 18px; }
-.lp-tile h3 { font-family: var(--font-display), Georgia, serif; font-weight: 500; font-size: 19px; color: var(--ink); margin-bottom: 8px; letter-spacing: -0.01em; }
+.lp-tile h3 { font-family: var(--font-display), system-ui, sans-serif; font-weight: 600; font-size: 18px; color: var(--ink); margin-bottom: 8px; letter-spacing: -0.02em; }
 .lp-tile p { font-size: 14px; line-height: 1.6; color: var(--ink-3); }
 
 /* stat row */
@@ -473,7 +495,7 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
 .lp-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
 .lp-step { position: relative; padding: 28px; border-radius: 16px; border: 1px solid var(--line); background: var(--card); }
 .lp-step .n { font-family: var(--font-mono), monospace; font-size: 12px; color: var(--amber); letter-spacing: 0.1em; }
-.lp-step h3 { font-family: var(--font-display), Georgia, serif; font-weight: 500; font-size: 20px; color: var(--ink); margin: 14px 0 8px; }
+.lp-step h3 { font-family: var(--font-display), system-ui, sans-serif; font-weight: 600; font-size: 19px; color: var(--ink); margin: 14px 0 8px; letter-spacing: -0.02em; }
 .lp-step p { font-size: 14px; line-height: 1.6; color: var(--ink-3); }
 
 /* who-sees-what table */
@@ -489,7 +511,7 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
 /* accordion */
 .lp-faq { border-top: 1px solid var(--line); }
 .lp-faq-item { border-bottom: 1px solid var(--line); }
-.lp-faq-q { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 24px 4px; background: none; border: none; cursor: pointer; text-align: left; color: var(--ink); font-family: var(--font-display), Georgia, serif; font-size: clamp(18px, 2.4vw, 22px); letter-spacing: -0.01em; }
+.lp-faq-q { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 24px 4px; background: none; border: none; cursor: pointer; text-align: left; color: var(--ink); font-family: var(--font-display), system-ui, sans-serif; font-weight: 560; font-size: clamp(17px, 2.2vw, 21px); letter-spacing: -0.02em; }
 .lp-faq-q:hover { color: var(--amber); }
 .lp-faq-q .pm { color: var(--ink-3); font-size: 22px; transition: transform 0.3s; flex-shrink: 0; }
 .lp-faq-a { overflow: hidden; }
