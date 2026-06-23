@@ -1,337 +1,506 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Keypair } from "@stellar/stellar-sdk";
-import { ASSET, POOL_ID, formatAmount } from "@/lib/config.ts";
-import { fetchPoolState, type PoolState } from "@/lib/stellar.ts";
-import { createWallet, clearWallet, fund, loadWallet } from "@/lib/wallet.ts";
-import { loadNotes, type StoredNote } from "@/lib/notes.ts";
-import { ShieldDialog } from "@/components/ShieldDialog.tsx";
-import { WithdrawDialog } from "@/components/WithdrawDialog.tsx";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { Reveal, Magnetic, Parallax, Counter } from "@/components/landing/ui.tsx";
+import { TerminalMock } from "@/components/landing/TerminalMock.tsx";
 
-const short = (s: string, n = 4) => (s.length > 2 * n ? `${s.slice(0, n)}…${s.slice(-n)}` : s);
-
-export default function Terminal() {
-  const [wallet, setWallet] = useState<Keypair | null>(null);
-  const [pool, setPool] = useState<PoolState | null>(null);
-  const [poolError, setPoolError] = useState<string | null>(null);
-  const [notes, setNotes] = useState<StoredNote[]>([]);
-  const [revealed, setRevealed] = useState<Record<string, boolean>>({});
-  const [busy, setBusy] = useState(false);
-  const [shieldOpen, setShieldOpen] = useState(false);
-  const [withdrawNote, setWithdrawNote] = useState<StoredNote | null>(null);
-  const [toast, setToast] = useState<{ kind: "ok" | "err"; msg: string } | null>(null);
-
-  const refreshPool = useCallback(async (src: string) => {
-    try {
-      setPool(await fetchPoolState(src));
-      setPoolError(null);
-    } catch (e) {
-      setPoolError(e instanceof Error ? e.message : String(e));
-    }
-  }, []);
-
-  useEffect(() => {
-    const kp = loadWallet();
-    setWallet(kp);
-    setNotes(loadNotes());
-    void refreshPool(kp?.publicKey() ?? "");
-  }, [refreshPool]);
-
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 4200);
-    return () => clearTimeout(t);
-  }, [toast]);
-
-  async function connect() {
-    setBusy(true);
-    try {
-      const kp = await createWallet();
-      setWallet(kp);
-      setToast({ kind: "ok", msg: "Testnet key created & funded" });
-      void refreshPool(kp.publicKey());
-    } catch (e) {
-      setToast({ kind: "err", msg: e instanceof Error ? e.message : String(e) });
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function disconnect() {
-    clearWallet();
-    setWallet(null);
-  }
-
-  const onSettled = (msg: string) => {
-    setToast({ kind: "ok", msg });
-    setNotes(loadNotes());
-    if (wallet) void refreshPool(wallet.publicKey());
-  };
-
-  const liveNotes = notes.filter((n) => !n.spent);
-  const totalShielded = liveNotes.reduce((s, n) => s + BigInt(n.value), 0n);
-
+export default function Landing() {
   return (
-    <main className="shell">
-      <Header wallet={wallet} onConnect={connect} onDisconnect={disconnect} busy={busy} />
-
-      <section style={{ margin: "40px 0 28px" }}>
-        <div className="eyebrow" style={{ marginBottom: 12 }}>The settlement terminal</div>
-        <h1 className="display" style={{ fontSize: 44, maxWidth: 720 }}>
-          Positions resolve <em>into focus</em>.
-        </h1>
-        <p className="dim" style={{ marginTop: 12, maxWidth: 560 }}>
-          Shielded by default. Amounts and holders are hidden behind zero-knowledge proofs;
-          reveal one only by deliberate act.
-        </p>
-      </section>
-
-      {/* stats bento */}
-      <div className="bento" style={{ marginBottom: 16 }}>
-        <Stat span={4} label="Total value · shielded" accent="cyan">
-          {wallet ? (
-            <span className="shielded" style={{ fontSize: 16 }}>view ●●●●</span>
-          ) : (
-            <span className="num stat-value">{pool ? formatAmount(pool.balance) : "—"}</span>
-          )}
-          <div className="help">
-            {wallet ? "visible only with your key" : "pool TVL · connect to shield"}
-          </div>
-        </Stat>
-        <Stat span={3} label="Your positions">
-          <span className="num stat-value">{liveNotes.length}</span>
-          <div className="help">{liveNotes.length ? `${formatAmount(totalShielded)} ${ASSET.symbol} held` : "none yet"}</div>
-        </Stat>
-        <Stat span={2} label="Pool commitments">
-          <span className="num stat-value amber">{pool ? pool.commitmentCount : "—"}</span>
-          <div className="help">notes in the tree</div>
-        </Stat>
-        <Stat span={3} label="State root" accent="violet">
-          <span className="mono" style={{ fontSize: 14, wordBreak: "break-all", color: "var(--violet)" }}>
-            {pool ? short(pool.root, 8) : "—"}
-          </span>
-          <div className="help">live · Merkle commitment</div>
-        </Stat>
-      </div>
-
-      {/* positions */}
-      <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-        <div className="between" style={{ padding: "18px 22px" }}>
-          <div className="row">
-            <strong style={{ fontSize: 15 }}>Positions</strong>
-            <span className="eyebrow">amounts shielded by default</span>
-          </div>
-          <div className="row">
-            <button className="btn ghost" onClick={() => setToast({ kind: "ok", msg: "Disclosure console — Phase 2" })}>
-              Disclose
-            </button>
-            <button className="btn primary" disabled={!wallet} onClick={() => setShieldOpen(true)}>
-              + Shield asset
-            </button>
-          </div>
-        </div>
-        <hr className="hairline" />
-
-        {liveNotes.length === 0 ? (
-          <div style={{ padding: 22 }}>
-            <div className="empty">
-              <div className="diamond">◇</div>
-              <div style={{ color: "var(--ink-2)" }}>No shielded positions yet</div>
-              <div className="help">{wallet ? "Shield an asset to begin." : "Connect a testnet key, then shield."}</div>
-            </div>
-          </div>
-        ) : (
-          liveNotes.map((n) => (
-            <PositionRow
-              key={n.commitment}
-              note={n}
-              revealed={!!revealed[n.commitment]}
-              onToggle={() => setRevealed((r) => ({ ...r, [n.commitment]: !r[n.commitment] }))}
-              onSettle={() => setWithdrawNote(n)}
-            />
-          ))
-        )}
-      </div>
-
-      {poolError && (
-        <div className="card" style={{ marginTop: 16, borderColor: "rgba(239,111,111,0.3)" }}>
-          <div className="row">
-            <span className="badge red">chain</span>
-            <span className="dim" style={{ fontSize: 13 }}>Couldn’t read the pool: {poolError}</span>
-          </div>
-        </div>
-      )}
-
-      <footer className="between" style={{ marginTop: 28, color: "var(--ink-4)", fontSize: 11 }}>
-        <span className="eyebrow">NoirRail · Obsidian Clearing</span>
-        <span className="mono">{short(POOL_ID, 6)} · testnet</span>
-      </footer>
-
-      {shieldOpen && wallet && (
-        <ShieldDialog
-          wallet={wallet}
-          onClose={() => setShieldOpen(false)}
-          onDone={(msg) => {
-            setShieldOpen(false);
-            onSettled(msg);
-          }}
-        />
-      )}
-      {withdrawNote && wallet && (
-        <WithdrawDialog
-          wallet={wallet}
-          note={withdrawNote}
-          onClose={() => setWithdrawNote(null)}
-          onDone={(msg) => {
-            setWithdrawNote(null);
-            onSettled(msg);
-          }}
-        />
-      )}
-
-      {toast && (
-        <div className="toast">
-          <span className={`badge ${toast.kind === "ok" ? "green" : "red"}`}>{toast.kind === "ok" ? "done" : "error"}</span>
-          <span style={{ fontSize: 13 }}>{toast.msg}</span>
-        </div>
-      )}
+    <main className="lp">
+      <Background />
+      <Nav />
+      <Hero />
+      <Anchors />
+      <Stats />
+      <Features />
+      <SettlementPath />
+      <Security />
+      <FAQ />
+      <FinalCTA />
+      <Footer />
     </main>
   );
 }
 
-function Header({
-  wallet,
-  onConnect,
-  onDisconnect,
-  busy,
-}: {
-  wallet: Keypair | null;
-  onConnect: () => void;
-  onDisconnect: () => void;
-  busy: boolean;
-}) {
+/* ----------------------------------------------------------------- atmosphere */
+
+function Background() {
   return (
-    <header className="between" style={{ paddingTop: 8 }}>
-      <div className="row" style={{ gap: 14 }}>
-        <span className="display" style={{ fontSize: 22 }}>
-          Noir<em>Rail</em>
-        </span>
-        <span className="badge cyan">Stellar · Testnet</span>
+    <>
+      <div className="lp-bg">
+        <div className="lp-glow amber" style={{ width: 620, height: 620, top: -220, left: "8%", animation: "drift 26s ease-in-out infinite" }} />
+        <div className="lp-glow cyan" style={{ width: 520, height: 520, top: 220, right: "2%", animation: "drift 32s ease-in-out infinite reverse" }} />
+        <div className="lp-glow violet" style={{ width: 460, height: 460, top: 1400, left: "30%", animation: "drift 30s ease-in-out infinite" }} />
       </div>
-      {wallet ? (
-        <div className="row">
-          <span className="badge">{short(wallet.publicKey(), 5)}</span>
-          <button className="btn ghost" onClick={onDisconnect}>
-            Disconnect
-          </button>
+      <div className="lp-grain" />
+    </>
+  );
+}
+
+/* ------------------------------------------------------------------------ nav */
+
+function Nav() {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 24);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  return (
+    <nav className={`lp-nav ${scrolled ? "scrolled" : ""}`}>
+      <div className="lp-container">
+        <div className="lp-nav-inner">
+          <Link href="/" className="lp-wordmark">
+            Noir<em>Rail</em>
+          </Link>
+          <div className="lp-navlinks">
+            <a className="lp-navlink" href="#features">Product</a>
+            <a className="lp-navlink" href="#how">How it works</a>
+            <a className="lp-navlink" href="#security">Security</a>
+            <a className="lp-navlink" href="#faq">FAQ</a>
+          </div>
+          <Magnetic strength={0.35}>
+            <Link href="/terminal" className="lp-cta primary" style={{ height: 40, padding: "0 16px" }}>
+              Open the terminal <span className="arrow">→</span>
+            </Link>
+          </Magnetic>
         </div>
-      ) : (
-        <button className={`btn ${busy ? "loading" : "primary"}`} onClick={onConnect} disabled={busy}>
-          {busy ? <span className="spinner" /> : null}
-          {busy ? "Funding…" : "Connect testnet key"}
-        </button>
-      )}
+      </div>
+    </nav>
+  );
+}
+
+/* ----------------------------------------------------------------------- hero */
+
+function Hero() {
+  return (
+    <header className="lp-section" style={{ paddingTop: "clamp(120px, 16vw, 200px)" }}>
+      <div className="lp-container">
+        <div style={{ maxWidth: 820, margin: "0 auto", textAlign: "center" }}>
+          <Reveal>
+            <span className="lp-chip" style={{ marginBottom: 28 }}>
+              <i style={{ background: "var(--green)", boxShadow: "0 0 8px var(--green)", animation: "blink 2.4s ease-in-out infinite" }} />
+              Live on Stellar testnet · shield → transfer → unshield
+            </span>
+          </Reveal>
+          <Reveal delay={0.06}>
+            <h1 className="lp-h1" style={{ marginBottom: 26 }}>
+              Real-world value,
+              <br />
+              settled in the <em>dark</em>.
+            </h1>
+          </Reveal>
+          <Reveal delay={0.14}>
+            <p className="lp-lead" style={{ margin: "0 auto 36px" }}>
+              NoirRail shields tokenized treasuries, invoices, and credit on Stellar. Amounts and
+              positions hide behind zero-knowledge proofs — openable on demand, in proof, to your
+              auditor. A rail you can see through, but no one can{" "}
+              <span style={{ color: "var(--cyan)", fontStyle: "italic" }}>see into</span>.
+            </p>
+          </Reveal>
+          <Reveal delay={0.22}>
+            <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
+              <Magnetic>
+                <Link href="/terminal" className="lp-cta primary">
+                  Open the terminal <span className="arrow">→</span>
+                </Link>
+              </Magnetic>
+              <Magnetic strength={0.25}>
+                <a href="#how" className="lp-cta ghost">Explore the architecture</a>
+              </Magnetic>
+            </div>
+          </Reveal>
+        </div>
+
+        <Reveal delay={0.32} y={40}>
+          <Parallax amount={36} className="lp-float">
+            <div style={{ maxWidth: 940, margin: "72px auto 0", position: "relative" }}>
+              <div className="lp-glow amber" style={{ width: 380, height: 200, bottom: -40, left: "50%", transform: "translateX(-50%)", opacity: 0.35 }} />
+              <TerminalMock />
+            </div>
+          </Parallax>
+        </Reveal>
+
+        <Reveal delay={0.4}>
+          <p className="lp-eyebrow center" style={{ justifyContent: "center", marginTop: 28, color: "var(--ink-4)" }}>
+            ↑ hover any shielded value to reveal it
+          </p>
+        </Reveal>
+      </div>
     </header>
   );
 }
 
-function Stat({
-  label,
-  span,
-  accent,
-  children,
-}: {
-  label: string;
-  span: number;
-  accent?: "cyan" | "violet" | "amber";
-  children: React.ReactNode;
-}) {
+/* -------------------------------------------------------------------- anchors */
+
+function Anchors() {
+  const names = ["Franklin Templeton", "BlackRock", "WisdomTree", "Ondo", "Securitize", "Circle"];
+  const loop = [...names, ...names];
   return (
-    <div className="card card-tight" style={{ gridColumn: `span ${span}`, minWidth: 0 }}>
-      <div className="eyebrow" style={{ marginBottom: 12 }}>{label}</div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>{children}</div>
-      {accent && (
-        <div
-          style={{
-            position: "absolute",
-            top: 16,
-            right: 16,
-            width: 6,
-            height: 6,
-            borderRadius: 999,
-            background: `var(--${accent})`,
-            boxShadow: `0 0 8px var(--${accent})`,
-          }}
-        />
-      )}
+    <section className="lp-section tight">
+      <div className="lp-container lp-center">
+        <Reveal>
+          <p className="lp-eyebrow center" style={{ justifyContent: "center", marginBottom: 28 }}>
+            Where tokenized real-world assets already live
+          </p>
+        </Reveal>
+        <Reveal delay={0.1}>
+          <div className="lp-mask-x" style={{ overflow: "hidden" }}>
+            <motion.div
+              className="lp-marquee"
+              animate={{ x: ["0%", "-50%"] }}
+              transition={{ duration: 28, ease: "linear", repeat: Infinity }}
+              style={{ width: "max-content" }}
+            >
+              {loop.map((n, i) => (
+                <span key={i}>{n}</span>
+              ))}
+            </motion.div>
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+/* ---------------------------------------------------------------------- stats */
+
+function Stats() {
+  const items = [
+    { v: <Counter to={18.6} decimals={1} prefix="$" suffix="B" />, k: "RWA on-chain, ex-stablecoin" },
+    { v: <Counter to={35.8} decimals={1} suffix="%" />, k: "Tokenized-treasury share" },
+    { v: <Counter to={20} suffix="×" />, k: "Walled-garden vs free TVL" },
+    { v: <span className="num">3–5<em style={{ color: "var(--amber)", fontStyle: "normal", fontSize: "0.6em" }}>s</em></span>, k: "Settlement finality" },
+  ];
+  return (
+    <section className="lp-section tight">
+      <div className="lp-container">
+        <Reveal>
+          <div className="lp-stats">
+            {items.map((s, i) => (
+              <div className="lp-stat" key={i}>
+                <div className="v">{s.v}</div>
+                <div className="k">{s.k}</div>
+              </div>
+            ))}
+          </div>
+        </Reveal>
+        <Reveal delay={0.1}>
+          <p className="lp-body lp-center" style={{ maxWidth: "64ch", margin: "28px auto 0", color: "var(--ink-4)" }}>
+            The value moved on-chain. The privacy did not. Public ledgers leak strategy — so size
+            retreats into walled gardens. Privacy is the unlock.
+          </p>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------- features */
+
+const FEATURES = [
+  { ic: "◈", t: "Shielded by default", d: "Amounts and holder positions never touch the public ledger. The chain stores a Merkle root and a nullifier set — nothing legible.", accent: "rgba(91,217,210,0.4)", cls: "wide" },
+  { ic: "⊞", t: "Arbitrary value, bound on-chain", d: "Not a fixed-denomination mixer. The deposited amount is recomputed into the note's commitment on-chain, so a note is worth exactly what was escrowed.", accent: "rgba(231,178,92,0.4)", cls: "wide" },
+  { ic: "→", t: "Recipient-bound", d: "The payee is bound inside the proof. A watcher who copies a pending transaction cannot redirect the funds.", accent: "rgba(154,140,240,0.4)", cls: "" },
+  { ic: "◐", t: "Auditable on demand", d: "Viewing keys and selective-disclosure proofs let a holder prove a fact — “under the limit”, “approved set” — without revealing the figure.", accent: "rgba(91,217,210,0.4)", cls: "" },
+  { ic: "⌘", t: "In-browser proving", d: "snarkjs runs in a Web Worker. The secret note, the witness, the keys — none ever cross the network boundary.", accent: "rgba(231,178,92,0.4)", cls: "" },
+  { ic: "✦", t: "One pairing per settlement", d: "A single Groth16 verification over BLS12-381, native on Soroban. Everything else is cheap bookkeeping over commitments and roots.", accent: "rgba(154,140,240,0.4)", cls: "full" },
+];
+
+function Features() {
+  return (
+    <section className="lp-section" id="features">
+      <div className="lp-container">
+        <Reveal>
+          <p className="lp-eyebrow" style={{ marginBottom: 20 }}>The primitive</p>
+        </Reveal>
+        <Reveal delay={0.06}>
+          <h2 className="lp-h2" style={{ maxWidth: "18ch", marginBottom: 18 }}>
+            Confidentiality and auditability, <em>together</em>.
+          </h2>
+        </Reveal>
+        <Reveal delay={0.12}>
+          <p className="lp-lead" style={{ marginBottom: 48 }}>
+            The two properties institutions actually need but rarely get at once. NoirRail makes
+            confidentiality a protocol property — not a platform one.
+          </p>
+        </Reveal>
+        <div className="lp-bento">
+          {FEATURES.map((f, i) => (
+            <Reveal key={i} delay={(i % 3) * 0.06} className={`lp-tile ${f.cls}`} style={{ "--accent": f.accent } as CSSProperties}>
+              <div className="ic" aria-hidden>{f.ic}</div>
+              <h3>{f.t}</h3>
+              <p>{f.d}</p>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------- settlement path */
+
+const STEPS = [
+  { n: "01 · SHIELD", h: "Deposit becomes a secret", p: "A tokenized asset enters the pool. The holder posts a commitment; the balance vanishes from public view. Transparent at the edge, sealed thereafter." },
+  { n: "02 · TRANSFER", h: "Settle privately", p: "Prove ownership of an unspent note and mint recipient notes. Amounts, sender, and receiver stay hidden; a nullifier prevents double-spend." },
+  { n: "03 · UNSHIELD", h: "Exit in daylight, by choice", p: "Prove a valid note and a bound recipient, then release to a transparent address. The one moment value re-enters the light — on your terms." },
+];
+
+function SettlementPath() {
+  return (
+    <section className="lp-section" id="how">
+      <div className="lp-container">
+        <div className="lp-split" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, alignItems: "center", marginBottom: 56 }}>
+          <div>
+            <Reveal><p className="lp-eyebrow" style={{ marginBottom: 20 }}>The settlement path</p></Reveal>
+            <Reveal delay={0.06}>
+              <h2 className="lp-h2" style={{ marginBottom: 18 }}>
+                A value is a <em>note</em>.
+              </h2>
+            </Reveal>
+            <Reveal delay={0.12}>
+              <p className="lp-lead">
+                Spending it reveals only a one-time nullifier — never the note. Everything else is a
+                Merkle proof of inclusion, checked in zero knowledge. The link between a deposit and
+                a spend never appears on-chain.
+              </p>
+            </Reveal>
+            <Reveal delay={0.18}>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 28 }}>
+                <span className="lp-chip"><i style={{ background: "var(--cyan)" }} /> commitment</span>
+                <span className="lp-chip"><i style={{ background: "var(--amber)" }} /> nullifier</span>
+                <span className="lp-chip"><i style={{ background: "var(--violet)" }} /> merkle root</span>
+              </div>
+            </Reveal>
+          </div>
+          <Reveal delay={0.1} y={30}>
+            <ChainView />
+          </Reveal>
+        </div>
+
+        <div className="lp-steps">
+          {STEPS.map((s, i) => (
+            <Reveal key={i} delay={i * 0.08} className="lp-step">
+              <div>
+                <div className="n">{s.n}</div>
+                <h3>{s.h}</h3>
+                <p>{s.p}</p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ChainView() {
+  return (
+    <div className="lp-window">
+      <div className="lp-chrome">
+        <div className="lp-dots"><i /><i /><i /></div>
+        <div className="lp-urlbar">what the chain remembers</div>
+      </div>
+      <div style={{ padding: 22, display: "grid", gap: 14 }}>
+        {[
+          { k: "commitment", v: "c = Poseidon( v, label, Poseidon(n, s) )", tone: "var(--cyan)" },
+          { k: "nullifier", v: "nf = Poseidon( n )  · spent once", tone: "var(--amber)" },
+          { k: "merkle root", v: "0x9c3d…6e90  · depth 14", tone: "var(--violet)" },
+        ].map((r, i) => (
+          <div key={i} style={{ borderLeft: `2px solid ${r.tone}`, paddingLeft: 14 }}>
+            <div className="lp-asub">{r.k}</div>
+            <div className="num" style={{ fontSize: 13, color: "var(--ink-2)", marginTop: 4 }}>{r.v}</div>
+          </div>
+        ))}
+        <div className="hairline" style={{ margin: "4px 0" }} />
+        <p className="lp-body" style={{ color: "var(--ink-4)", fontSize: 13 }}>
+          No amount. No owner. No counterparty. Just commitments, a bounded root history, and spent
+          nullifiers.
+        </p>
+      </div>
     </div>
   );
 }
 
-function PositionRow({
-  note,
-  revealed,
-  onToggle,
-  onSettle,
-}: {
-  note: StoredNote;
-  revealed: boolean;
-  onToggle: () => void;
-  onSettle: () => void;
-}) {
-  const initial = note.scope.replace(/[^a-zA-Z]/g, "").slice(0, 2).toUpperCase() || "NR";
-  return (
-    <div
-      className="between"
-      style={{ padding: "16px 22px", borderTop: "1px solid var(--line)" }}
-    >
-      <div className="row" style={{ gap: 14 }}>
-        <div
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: 9,
-            background: "var(--amber-dim)",
-            color: "var(--amber)",
-            display: "grid",
-            placeItems: "center",
-            fontFamily: "var(--font-mono)",
-            fontSize: 13,
-          }}
-        >
-          {initial}
-        </div>
-        <div>
-          <div style={{ fontSize: 14.5 }}>{note.scope}</div>
-          <div className="eyebrow">shielded note · {ASSET.symbol}</div>
-        </div>
-      </div>
+/* ------------------------------------------------------------------- security */
 
-      <div className="row" style={{ gap: 28 }}>
-        <div style={{ textAlign: "right", minWidth: 150 }}>
-          <div className="eyebrow" style={{ marginBottom: 6 }}>balance</div>
-          {revealed ? (
-            <span className="revealed" style={{ fontSize: 15 }}>
-              {formatAmount(BigInt(note.value))} {ASSET.symbol}
-            </span>
-          ) : (
-            <button className="shielded" onClick={onToggle} title="reveal (deliberate act)">
-              shielded ●●●●
-            </button>
-          )}
-        </div>
-        <div className="row">
-          {revealed && (
-            <button className="btn ghost" onClick={onToggle}>
-              Hide
-            </button>
-          )}
-          <button className="btn" onClick={onSettle}>
-            Settle →
-          </button>
+const SEES = [
+  ["Public / chain", "hidden", "hidden", "hidden"],
+  ["Holder", "full", "full", "full"],
+  ["Auditor (granted)", "full", "scoped", "scoped"],
+  ["Counterparty", "one tx", "self only", "hidden"],
+];
+
+function Security() {
+  return (
+    <section className="lp-section" id="security">
+      <div className="lp-container">
+        <Reveal><p className="lp-eyebrow" style={{ marginBottom: 20 }}>Auditability without surveillance</p></Reveal>
+        <div className="lp-split" style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: 48, alignItems: "start" }}>
+          <div>
+            <Reveal delay={0.06}>
+              <h2 className="lp-h2" style={{ marginBottom: 18 }}>
+                The right party sees the right thing. <em>No one</em> sees everything.
+              </h2>
+            </Reveal>
+            <Reveal delay={0.12}>
+              <p className="lp-lead">
+                Privacy a regulator can't inspect is a liability. Disclosure is mandatory by design —
+                there is no master key, and no single party can unmask the rail.
+              </p>
+            </Reveal>
+            <Reveal delay={0.18}>
+              <div className="lp-chip" style={{ marginTop: 28 }}>
+                <i style={{ background: "var(--green)" }} /> No master key · revocable by design
+              </div>
+            </Reveal>
+          </div>
+          <Reveal delay={0.1}>
+            <table className="lp-table">
+              <thead>
+                <tr><th>Party</th><th>Amount</th><th>Counterparties</th><th>History</th></tr>
+              </thead>
+              <tbody>
+                {SEES.map((r, i) => (
+                  <tr key={i}>
+                    {r.map((c, j) => (
+                      <td key={j} className={j === 0 ? "" : c === "hidden" ? "hide" : c.includes("full") || c === "one tx" ? "show" : ""}>
+                        {c}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Reveal>
         </div>
       </div>
-    </div>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------------ faq */
+
+const QA: [string, string][] = [
+  ["Is this a mixer?", "No. Disclosure is a first-class design goal, not an escape hatch. Holders grant viewing keys and produce selective-disclosure proofs so auditors keep a verifiable, revocable line of sight. NoirRail separates privacy from anonymity."],
+  ["Where does it actually settle?", "Natively on Stellar via Soroban smart contracts — no rollup, no bridge. The pool custodies the underlying Stellar Asset Contract balance; finality is 3–5 seconds. A single Groth16 pairing is verified on-chain per settlement."],
+  ["Do my secrets ever leave my device?", "Never. Notes are generated and stored locally, and proofs are produced in the browser with snarkjs in a Web Worker. Only the public proof and signals are submitted; the wallet signs the transaction."],
+  ["What's actually live today?", "Phase 0 — the hackathon MVP — settles shield → transfer → unshield end-to-end on Stellar testnet, with in-browser proving validated byte-for-byte against the chain. Compliance disclosure, yield on hidden balances, and a multi-party trusted setup are later phases."],
+  ["What cryptography is under the hood?", "Circom circuits, Groth16 proofs over BLS12-381, and Poseidon hashing — the exact stack the Stellar Development Foundation prototyped, extended from a fixed-denomination mixer into a value-bearing, recipient-bound settlement layer."],
+];
+
+function FAQ() {
+  const [open, setOpen] = useState<number | null>(0);
+  return (
+    <section className="lp-section" id="faq">
+      <div className="lp-container" style={{ maxWidth: 860 }}>
+        <Reveal><p className="lp-eyebrow" style={{ marginBottom: 20 }}>Questions, answered plainly</p></Reveal>
+        <Reveal delay={0.06}><h2 className="lp-h2" style={{ marginBottom: 40 }}>Frequently asked.</h2></Reveal>
+        <div className="lp-faq">
+          {QA.map(([q, a], i) => (
+            <Reveal key={i} delay={i * 0.04} className="lp-faq-item">
+              <div>
+                <button className="lp-faq-q" onClick={() => setOpen(open === i ? null : i)} aria-expanded={open === i}>
+                  {q}
+                  <span className="pm" style={{ transform: open === i ? "rotate(45deg)" : "none" }}>+</span>
+                </button>
+                <AnimatePresence initial={false}>
+                  {open === i && (
+                    <motion.div
+                      className="lp-faq-a"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                    >
+                      <p>{a}</p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ final cta */
+
+function FinalCTA() {
+  return (
+    <section className="lp-section">
+      <div className="lp-container">
+        <Reveal y={30}>
+          <div className="lp-final">
+            <div className="lp-glow amber" style={{ width: 420, height: 220, top: -60, left: "50%", transform: "translateX(-50%)", opacity: 0.4 }} />
+            <p className="lp-eyebrow center" style={{ justifyContent: "center", marginBottom: 24 }}>See for yourself</p>
+            <h2 className="lp-h2" style={{ maxWidth: "20ch", margin: "0 auto 20px" }}>
+              Settle a shielded value, <em>right now</em>.
+            </h2>
+            <p className="lp-lead" style={{ margin: "0 auto 36px", textAlign: "center" }}>
+              Open the terminal and move a position on Stellar testnet — amounts cyan and sealed, the
+              proof generated in your browser, the settlement on-chain in seconds.
+            </p>
+            <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
+              <Magnetic>
+                <Link href="/terminal" className="lp-cta primary">Open the terminal <span className="arrow">→</span></Link>
+              </Magnetic>
+              <Magnetic strength={0.25}>
+                <a href="#features" className="lp-cta ghost">Back to the top</a>
+              </Magnetic>
+            </div>
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+/* --------------------------------------------------------------------- footer */
+
+function Footer() {
+  const cols = [
+    { h: "Product", links: [["Terminal", "/terminal"], ["How it works", "#how"], ["Security", "#security"]] },
+    { h: "Architecture", links: [["Circuits", "#how"], ["Settlement path", "#how"], ["The book · 13 chapters", "#"]] },
+    { h: "Stack", links: [["Stellar · Soroban", "#"], ["Circom · Groth16", "#"], ["BLS12-381", "#"]] },
+  ];
+  return (
+    <footer className="lp-footer">
+      <div className="lp-container">
+        <div className="lp-foot-grid">
+          <div>
+            <div className="lp-wordmark" style={{ fontSize: 26, marginBottom: 16 }}>Noir<em>Rail</em></div>
+            <p className="lp-body" style={{ maxWidth: "36ch", color: "var(--ink-3)" }}>
+              Shielded settlement for tokenized real-world assets on Stellar. Confidential to the
+              public, legible to the auditor.
+            </p>
+            <div style={{ display: "flex", gap: 8, marginTop: 20, flexWrap: "wrap" }}>
+              {["Stellar", "Soroban", "BLS12-381", "Shielded & auditable"].map((t) => (
+                <span className="lp-chip" key={t} style={{ height: 26, fontSize: 10.5 }}>{t}</span>
+              ))}
+            </div>
+          </div>
+          {cols.map((c) => (
+            <div key={c.h}>
+              <div className="lp-foot-h">{c.h}</div>
+              {c.links.map(([t, href]) => (
+                <a key={t} className="lp-foot-link" href={href}>{t}</a>
+              ))}
+            </div>
+          ))}
+        </div>
+        <div className="hairline" style={{ margin: "40px 0 24px" }} />
+        <div className="between" style={{ flexWrap: "wrap", gap: 12 }}>
+          <span className="lp-asub" style={{ color: "var(--ink-4)" }}>Obsidian Clearing · v1.0 — engineering preview</span>
+          <span className="lp-asub" style={{ color: "var(--ink-4)" }}>Real-world value, settled in the dark.</span>
+        </div>
+      </div>
+    </footer>
   );
 }
