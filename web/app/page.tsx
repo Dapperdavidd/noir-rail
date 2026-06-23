@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Reveal, Magnetic, Parallax, Counter } from "@/components/landing/ui.tsx";
 import { TerminalMock } from "@/components/landing/TerminalMock.tsx";
