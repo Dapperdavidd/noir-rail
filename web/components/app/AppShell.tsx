@@ -1,0 +1,117 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import type { ReactNode } from "react";
+import { useWallet } from "./wallet-context.tsx";
+
+const short = (s: string, n = 4) => (s.length > 2 * n ? `${s.slice(0, n)}…${s.slice(-n)}` : s);
+
+type Item = { href: string; label: string; icon: keyof typeof ICONS; soon?: boolean };
+const SECTIONS: { label?: string; items: Item[] }[] = [
+  { items: [{ href: "/app", label: "Overview", icon: "grid" }] },
+  {
+    label: "Settle",
+    items: [
+      { href: "/app/terminal", label: "Terminal", icon: "terminal" },
+      { href: "/app/activity", label: "Activity", icon: "activity" },
+      { href: "/app/assets", label: "Assets", icon: "layers" },
+    ],
+  },
+  { label: "Audit", items: [{ href: "/app/disclosure", label: "Disclosure", icon: "eye", soon: true }] },
+  { label: "Learn", items: [{ href: "/app/docs", label: "Documentation", icon: "book" }] },
+  { items: [{ href: "/app/settings", label: "Settings", icon: "gear" }] },
+];
+
+const ALL = SECTIONS.flatMap((s) => s.items);
+
+export function AppShell({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const isActive = (href: string) => (href === "/app" ? pathname === "/app" : pathname.startsWith(href));
+  const current = [...ALL].reverse().find((i) => isActive(i.href));
+
+  return (
+    <div className="app-root">
+      <aside className="app-sidebar">
+        <Link href="/" className="app-brand" aria-label="NoirRail home">
+          <span className="mark">N</span>
+          <span className="wm">Noir<em>Rail</em></span>
+        </Link>
+
+        {SECTIONS.map((sec, i) => (
+          <div key={i}>
+            {sec.label && <div className="app-navlabel">{sec.label}</div>}
+            {sec.items.map((it) => (
+              <Link key={it.href} href={it.href} className={`app-nav ${isActive(it.href) ? "active" : ""}`}>
+                <Icon name={it.icon} />
+                {it.label}
+                {it.soon && <span className="soon">Phase 2</span>}
+              </Link>
+            ))}
+          </div>
+        ))}
+
+        <div className="app-side-foot">
+          <div className="app-netpill"><i /> Stellar · Testnet</div>
+        </div>
+      </aside>
+
+      <div className="app-main">
+        <header className="app-topbar">
+          <div className="app-crumb">NoirRail <span style={{ opacity: 0.4 }}>/</span> <b>{current?.label ?? "App"}</b></div>
+          <WalletButton />
+        </header>
+
+        {/* mobile section nav */}
+        <nav className="app-mobilebar">
+          {ALL.map((it) => (
+            <Link key={it.href} href={it.href} className={`badge ${isActive(it.href) ? "amber" : ""}`} style={{ flexShrink: 0 }}>
+              {it.label}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="app-content">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function WalletButton() {
+  const { wallet, busy, connect, disconnect } = useWallet();
+  if (wallet) {
+    return (
+      <div className="row" style={{ gap: 10 }}>
+        <span className="app-netpill" style={{ padding: "6px 10px" }}>
+          <i style={{ background: "var(--amber)", boxShadow: "0 0 8px var(--amber)" }} />
+          {short(wallet.publicKey(), 5)}
+        </span>
+        <button className="btn ghost" onClick={disconnect}>Disconnect</button>
+      </div>
+    );
+  }
+  return (
+    <button className={`btn ${busy ? "loading" : "primary"}`} onClick={connect} disabled={busy}>
+      {busy ? <span className="spinner" /> : null}
+      {busy ? "Funding…" : "Connect testnet key"}
+    </button>
+  );
+}
+
+function Icon({ name }: { name: keyof typeof ICONS }) {
+  return (
+    <svg className="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      {ICONS[name]}
+    </svg>
+  );
+}
+
+const ICONS = {
+  grid: (<><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></>),
+  terminal: (<><rect x="3" y="4" width="18" height="16" rx="2" /><path d="m7 9 3 3-3 3" /><path d="M13 15h4" /></>),
+  activity: (<path d="M3 12h4l2.5-7 5 14L17 12h4" />),
+  layers: (<><path d="m12 3 9 5-9 5-9-5 9-5Z" /><path d="m3 13 9 5 9-5" /></>),
+  eye: (<><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></>),
+  book: (<><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2V5Z" /><path d="M19 17H6" /></>),
+  gear: (<><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 0 1-4 0v-.1A1.6 1.6 0 0 0 6.7 19.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 4 12.6 1.6 1.6 0 0 0 2.9 11H3a2 2 0 0 1 0-4h.1A1.6 1.6 0 0 0 4.6 5.3l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 11 2.9V3a2 2 0 0 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7H21a2 2 0 0 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1.4Z" /></>),
+} as const;

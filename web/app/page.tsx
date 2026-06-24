@@ -143,8 +143,8 @@ function Nav() {
             <a className="lp-navlink" href="#faq">FAQ</a>
           </div>
           <Magnetic strength={0.35}>
-            <Link href="/terminal" className="lp-cta primary" style={{ height: 40, padding: "0 16px" }}>
-              Open the terminal <span className="arrow">→</span>
+            <Link href="/app" className="lp-cta primary" style={{ height: 40, padding: "0 16px" }}>
+              Launch <span className="arrow">→</span>
             </Link>
           </Magnetic>
         </div>
@@ -184,8 +184,8 @@ function Hero() {
           <Reveal delay={0.22}>
             <div style={{ display: "flex", gap: 22, justifyContent: "center", flexWrap: "wrap" }}>
               <Magnetic strength={0.18}>
-                <Link href="/terminal" className="lp-cta primary">
-                  Open the terminal <span className="arrow">→</span>
+                <Link href="/app" className="lp-cta primary">
+                  Launch <span className="arrow">→</span>
                 </Link>
               </Magnetic>
               <Magnetic strength={0.12}>
@@ -524,12 +524,12 @@ function FinalCTA() {
               Settle a shielded value, <em>right now</em>.
             </h2>
             <p className="lp-lead" style={{ margin: "0 auto 36px", textAlign: "center" }}>
-              Open the terminal and move a position on Stellar testnet — amounts cyan and sealed, the
+              Launch and move a position on Stellar testnet — amounts cyan and sealed, the
               proof generated in your browser, the settlement on-chain in seconds.
             </p>
             <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
               <Magnetic>
-                <Link href="/terminal" className="lp-cta primary">Open the terminal <span className="arrow">→</span></Link>
+                <Link href="/app" className="lp-cta primary">Launch <span className="arrow">→</span></Link>
               </Magnetic>
               <Magnetic strength={0.25}>
                 <a href="#features" className="lp-cta ghost">Back to the top</a>
@@ -546,7 +546,7 @@ function FinalCTA() {
 
 function Footer() {
   const cols = [
-    { h: "Product", links: [["Terminal", "/terminal"], ["How it works", "#how"], ["Security", "#security"]] },
+    { h: "Product", links: [["Launch app", "/app"], ["Terminal", "/app/terminal"], ["Documentation", "/app/docs"]] },
     { h: "Architecture", links: [["Circuits", "#how"], ["Settlement path", "#how"], ["The book · 13 chapters", "#"]] },
     { h: "Stack", links: [["Stellar · Soroban", "#"], ["Circom · Groth16", "#"], ["BLS12-381", "#"]] },
   ];

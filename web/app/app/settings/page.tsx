@@ -1,0 +1,77 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { ASSET, POOL_ID, NETWORK } from "@/lib/config.ts";
+import { loadNotes } from "@/lib/notes.ts";
+import { useWallet } from "@/components/app/wallet-context.tsx";
+
+export default function Settings() {
+  const { wallet, busy, connect, disconnect } = useWallet();
+  const [noteCount, setNoteCount] = useState(0);
+  useEffect(() => setNoteCount(loadNotes().filter((n) => !n.spent).length), [wallet]);
+
+  return (
+    <>
+      <div className="app-pagehead">
+        <h1>Settings</h1>
+        <p>Your testnet key, the network, and local note storage. Secrets live only on this device.</p>
+      </div>
+
+      <div className="app-grid">
+        <div className="app-tile" style={{ gridColumn: "span 7" }}>
+          <div className="eyebrow" style={{ marginBottom: 12 }}>Wallet</div>
+          {wallet ? (
+            <>
+              <Field k="Public key" v={wallet.publicKey()} mono />
+              <Field k="Live notes (this device)" v={String(noteCount)} />
+              <button className="btn ghost" style={{ marginTop: 14 }} onClick={disconnect}>Disconnect key</button>
+            </>
+          ) : (
+            <>
+              <p className="help" style={{ marginTop: 0 }}>No key connected. Create a funded testnet key to shield and settle.</p>
+              <button className={`btn ${busy ? "loading" : "primary"}`} style={{ marginTop: 14 }} onClick={connect} disabled={busy}>
+                {busy ? <span className="spinner" /> : null}{busy ? "Funding…" : "Connect testnet key"}
+              </button>
+            </>
+          )}
+        </div>
+
+        <div className="app-tile" style={{ gridColumn: "span 5" }}>
+          <div className="eyebrow" style={{ marginBottom: 12 }}>Network</div>
+          <Field k="Chain" v="Stellar" />
+          <Field k="Network" v={NETWORK ?? "testnet"} />
+          <Field k="Asset" v={ASSET.symbol} />
+          <Field k="Pool contract" v={POOL_ID} mono />
+        </div>
+      </div>
+
+      <div className="app-tile" style={{ marginTop: 16, borderColor: "rgba(239,111,111,0.25)" }}>
+        <div className="eyebrow" style={{ marginBottom: 8, color: "var(--red)" }}>Danger zone</div>
+        <div className="between">
+          <span className="help" style={{ marginTop: 0 }}>Clearing local data removes your stored notes and key from this browser. On-chain state is unaffected — but unspent notes become unrecoverable.</span>
+          <button
+            className="btn"
+            style={{ borderColor: "rgba(239,111,111,0.4)", color: "var(--red)" }}
+            onClick={() => {
+              if (confirm("Clear all local NoirRail data (notes + key) from this browser?")) {
+                localStorage.clear();
+                location.reload();
+              }
+            }}
+          >
+            Clear local data
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function Field({ k, v, mono }: { k: string; v: string; mono?: boolean }) {
+  return (
+    <div className="between" style={{ padding: "10px 0", borderBottom: "1px solid var(--line)", gap: 16 }}>
+      <span className="help" style={{ marginTop: 0 }}>{k}</span>
+      <span className={mono ? "mono" : ""} style={{ fontSize: 13, color: "var(--ink)", wordBreak: "break-all", textAlign: "right" }}>{v}</span>
+    </div>
+  );
+}
