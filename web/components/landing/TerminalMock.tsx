@@ -155,6 +155,7 @@ function ProofRing({ progress, settled }: { progress: number; settled: boolean }
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeDasharray={C}
+          initial={{ strokeDashoffset: C }}
           animate={{ strokeDashoffset: C - (C * progress) / 100 }}
           transition={{ ease: "linear", duration: 0.1 }}
         />

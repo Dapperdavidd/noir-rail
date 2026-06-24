@@ -5,6 +5,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Reveal, Magnetic, Parallax, Counter } from "@/components/landing/ui.tsx";
 import { TerminalMock } from "@/components/landing/TerminalMock.tsx";
+import { LivingBackground } from "@/components/landing/LivingBackground.tsx";
 
 export default function Landing() {
   // Torchlight: one delegated listener writes the cursor position into the hovered card's
@@ -68,11 +69,7 @@ export default function Landing() {
 function Background() {
   return (
     <>
-      <div className="lp-bg">
-        <div className="lp-glow amber" style={{ width: 620, height: 620, top: -220, left: "8%", animation: "drift 26s ease-in-out infinite" }} />
-        <div className="lp-glow cyan" style={{ width: 520, height: 520, top: 220, right: "2%", animation: "drift 32s ease-in-out infinite reverse" }} />
-        <div className="lp-glow violet" style={{ width: 460, height: 460, top: 1400, left: "30%", animation: "drift 30s ease-in-out infinite" }} />
-      </div>
+      <LivingBackground />
       <div className="lp-grain" />
     </>
   );
@@ -126,7 +123,7 @@ function Hero() {
   return (
     <header className="lp-section" style={{ paddingTop: "clamp(120px, 16vw, 200px)" }}>
       <div className="lp-container">
-        <div style={{ maxWidth: 820, margin: "0 auto", textAlign: "center" }}>
+        <div style={{ maxWidth: 820, margin: "0 auto", textAlign: "center", position: "relative" }}>
           <Reveal>
             <span className="lp-chip" style={{ marginBottom: 28 }}>
               <i style={{ background: "var(--green)", boxShadow: "0 0 8px var(--green)", animation: "blink 2.4s ease-in-out infinite" }} />
@@ -149,13 +146,13 @@ function Hero() {
             </p>
           </Reveal>
           <Reveal delay={0.22}>
-            <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
-              <Magnetic>
+            <div style={{ display: "flex", gap: 22, justifyContent: "center", flexWrap: "wrap" }}>
+              <Magnetic strength={0.18}>
                 <Link href="/terminal" className="lp-cta primary">
                   Open the terminal <span className="arrow">→</span>
                 </Link>
               </Magnetic>
-              <Magnetic strength={0.25}>
+              <Magnetic strength={0.12}>
                 <a href="#how" className="lp-cta ghost">Explore the architecture</a>
               </Magnetic>
             </div>

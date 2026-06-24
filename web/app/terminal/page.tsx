@@ -4,10 +4,12 @@ import { useCallback, useEffect, useState } from "react";
 import { Keypair } from "@stellar/stellar-sdk";
 import { ASSET, POOL_ID, formatAmount } from "@/lib/config.ts";
 import { fetchPoolState, type PoolState } from "@/lib/stellar.ts";
-import { createWallet, clearWallet, fund, loadWallet } from "@/lib/wallet.ts";
+import { createWallet, clearWallet, loadWallet } from "@/lib/wallet.ts";
 import { loadNotes, type StoredNote } from "@/lib/notes.ts";
 import { ShieldDialog } from "@/components/ShieldDialog.tsx";
 import { WithdrawDialog } from "@/components/WithdrawDialog.tsx";
+import { LivingBackground } from "@/components/landing/LivingBackground.tsx";
+import { ActivityStream } from "@/components/ActivityStream.tsx";
 
 const short = (s: string, n = 4) => (s.length > 2 * n ? `${s.slice(0, n)}…${s.slice(-n)}` : s);
 
@@ -73,7 +75,9 @@ export default function Terminal() {
   const totalShielded = liveNotes.reduce((s, n) => s + BigInt(n.value), 0n);
 
   return (
-    <main className="shell">
+    <>
+      <LivingBackground />
+      <main className="shell">
       <Header wallet={wallet} onConnect={connect} onDisconnect={disconnect} busy={busy} />
 
       <section style={{ margin: "40px 0 28px" }}>
@@ -154,6 +158,12 @@ export default function Terminal() {
         )}
       </div>
 
+      {/* live network activity — ambient, even when idle */}
+      <div style={{ marginTop: 16 }}>
+        <div className="eyebrow" style={{ marginBottom: 12 }}>Network activity</div>
+        <ActivityStream max={6} />
+      </div>
+
       {poolError && (
         <div className="card" style={{ marginTop: 16, borderColor: "rgba(239,111,111,0.3)" }}>
           <div className="row">
@@ -196,7 +206,8 @@ export default function Terminal() {
           <span style={{ fontSize: 13 }}>{toast.msg}</span>
         </div>
       )}
-    </main>
+      </main>
+    </>
   );
 }
 
