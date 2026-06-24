@@ -1,17 +1,17 @@
 import Link from "next/link";
 import { CHAPTERS } from "@/lib/chapters.ts";
+import { PageHead } from "@/components/app/PageHead.tsx";
 
 export default function DocsIndex() {
   const parts = [...new Set(CHAPTERS.map((c) => c.part))];
   return (
     <>
-      <div className="app-pagehead">
-        <h1>Documentation</h1>
-        <p>
-          The NoirRail book — a guided, build-it-yourself tour of the whole system, from the
-          thesis to the circuits, the contract, and the client. Read it in order.
-        </p>
-      </div>
+      <PageHead
+        eyebrow="The book"
+        accent="amber"
+        title="Documentation"
+        desc="The NoirRail book — a guided, build-it-yourself tour of the whole system, from the thesis to the circuits, the contract, and the client. Read it in order."
+      />
 
       {parts.map((part) => (
         <section key={part} style={{ marginBottom: 28 }}>

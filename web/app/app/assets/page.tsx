@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ASSET, formatAmount } from "@/lib/config.ts";
 import { fetchPoolState, type PoolState } from "@/lib/stellar.ts";
+import { PageHead } from "@/components/app/PageHead.tsx";
 
 export default function Assets() {
   const [pool, setPool] = useState<PoolState | null>(null);
@@ -13,14 +14,12 @@ export default function Assets() {
 
   return (
     <>
-      <div className="app-pagehead">
-        <h1>Assets</h1>
-        <p>
-          Each tokenized asset gets its own shielded pool — one Merkle tree, one nullifier set, one
-          Stellar Asset Contract in custody. Phase 0 runs a single live pool; the registry scales to
-          many in Phase 3.
-        </p>
-      </div>
+      <PageHead
+        eyebrow="Pools"
+        accent="violet"
+        title="Assets"
+        desc="Each tokenized asset gets its own shielded pool — one Merkle tree, one nullifier set, one Stellar Asset Contract in custody. Phase 0 runs a single live pool; the registry scales to many in Phase 3."
+      />
 
       <div className="app-grid">
         <div className="app-tile" style={{ gridColumn: "span 6" }}>

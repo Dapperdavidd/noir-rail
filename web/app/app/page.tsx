@@ -7,6 +7,7 @@ import { fetchPoolState, type PoolState } from "@/lib/stellar.ts";
 import { loadNotes, type StoredNote } from "@/lib/notes.ts";
 import { ActivityStream } from "@/components/ActivityStream.tsx";
 import { useWallet } from "@/components/app/wallet-context.tsx";
+import { PageHead } from "@/components/app/PageHead.tsx";
 
 const short = (s: string, n = 6) => (s.length > 2 * n ? `${s.slice(0, n)}…${s.slice(-n)}` : s);
 
@@ -25,13 +26,12 @@ export default function Overview() {
 
   return (
     <>
-      <div className="app-pagehead">
-        <h1>Control room</h1>
-        <p>
-          Live state of your shielded pool on Stellar testnet. Amounts are sealed by default —
-          settlement happens in the terminal; everything here updates as the chain does.
-        </p>
-      </div>
+      <PageHead
+        eyebrow="Dashboard"
+        accent="amber"
+        title="Control room"
+        desc="Live state of your shielded pool on Stellar testnet. Amounts are sealed by default — settlement happens in the terminal; everything here updates as the chain does."
+      />
 
       <div className="app-grid" style={{ marginBottom: 16 }}>
         <Tile span={3} label="Total value · shielded" accent="cyan">

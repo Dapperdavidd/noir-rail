@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useWallet } from "./wallet-context.tsx";
 
 const short = (s: string, n = 4) => (s.length > 2 * n ? `${s.slice(0, n)}…${s.slice(-n)}` : s);
@@ -30,19 +30,48 @@ export function AppShell({ children }: { children: ReactNode }) {
   const isActive = (href: string) => (href === "/app" ? pathname === "/app" : pathname.startsWith(href));
   const current = [...ALL].reverse().find((i) => isActive(i.href));
 
+  const [collapsed, setCollapsed] = useState(false);
+  const [peek, setPeek] = useState(false);
+  useEffect(() => {
+    setCollapsed(localStorage.getItem("nr.sidebar") === "collapsed");
+  }, []);
+  const toggle = () =>
+    setCollapsed((c) => {
+      const n = !c;
+      localStorage.setItem("nr.sidebar", n ? "collapsed" : "open");
+      setPeek(false);
+      return n;
+    });
+
   return (
-    <div className="app-root">
-      <aside className="app-sidebar">
-        <Link href="/" className="app-brand" aria-label="NoirRail home">
-          <span className="mark">N</span>
-          <span className="wm">Noir<em>Rail</em></span>
-        </Link>
+    <div className={`app-root ${collapsed ? "collapsed" : ""}`}>
+      {/* Arc-style: when collapsed, a thin left-edge zone slides the sidebar in on hover. */}
+      {collapsed && <div className="app-edge" onMouseEnter={() => setPeek(true)} aria-hidden />}
+
+      <aside
+        className={`app-sidebar ${collapsed && peek ? "peeking" : ""}`}
+        onMouseLeave={() => collapsed && setPeek(false)}
+      >
+        <div className="between" style={{ alignItems: "flex-start" }}>
+          <Link href="/" className="app-brand" aria-label="NoirRail home">
+            <span className="mark">N</span>
+            <span className="wm">Noir<em>Rail</em></span>
+          </Link>
+          <button className="app-iconbtn" style={{ marginTop: 2 }} onClick={toggle} aria-label="Collapse sidebar" title="Collapse sidebar">
+            <PanelIcon />
+          </button>
+        </div>
 
         {SECTIONS.map((sec, i) => (
           <div key={i}>
             {sec.label && <div className="app-navlabel">{sec.label}</div>}
             {sec.items.map((it) => (
-              <Link key={it.href} href={it.href} className={`app-nav ${isActive(it.href) ? "active" : ""}`}>
+              <Link
+                key={it.href}
+                href={it.href}
+                onClick={() => setPeek(false)}
+                className={`app-nav ${isActive(it.href) ? "active" : ""}`}
+              >
                 <Icon name={it.icon} />
                 {it.label}
                 {it.soon && <span className="soon">Phase 2</span>}
@@ -58,7 +87,14 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <div className="app-main">
         <header className="app-topbar">
-          <div className="app-crumb">NoirRail <span style={{ opacity: 0.4 }}>/</span> <b>{current?.label ?? "App"}</b></div>
+          <div className="row" style={{ gap: 12 }}>
+            {collapsed && (
+              <button className="app-iconbtn" onClick={toggle} aria-label="Pin sidebar" title="Pin sidebar">
+                <PanelIcon />
+              </button>
+            )}
+            <div className="app-crumb">NoirRail <span style={{ opacity: 0.4 }}>/</span> <b>{current?.label ?? "App"}</b></div>
+          </div>
           <WalletButton />
         </header>
 
@@ -74,6 +110,15 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="app-content">{children}</div>
       </div>
     </div>
+  );
+}
+
+function PanelIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M9 4v16" />
+    </svg>
   );
 }
 

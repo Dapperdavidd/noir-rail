@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ASSET, POOL_ID, NETWORK } from "@/lib/config.ts";
 import { loadNotes } from "@/lib/notes.ts";
 import { useWallet } from "@/components/app/wallet-context.tsx";
+import { PageHead } from "@/components/app/PageHead.tsx";
 
 export default function Settings() {
   const { wallet, busy, connect, disconnect } = useWallet();
@@ -12,10 +13,12 @@ export default function Settings() {
 
   return (
     <>
-      <div className="app-pagehead">
-        <h1>Settings</h1>
-        <p>Your testnet key, the network, and local note storage. Secrets live only on this device.</p>
-      </div>
+      <PageHead
+        eyebrow="Configuration"
+        accent="ink"
+        title="Settings"
+        desc="Your testnet key, the network, and local note storage. Secrets live only on this device."
+      />
 
       <div className="app-grid">
         <div className="app-tile" style={{ gridColumn: "span 7" }}>

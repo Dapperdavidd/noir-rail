@@ -1,13 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ASSET, POOL_ID, formatAmount } from "@/lib/config.ts";
+import { ASSET, formatAmount } from "@/lib/config.ts";
 import { fetchPoolState, type PoolState } from "@/lib/stellar.ts";
 import { loadNotes, type StoredNote } from "@/lib/notes.ts";
 import { ShieldDialog } from "@/components/ShieldDialog.tsx";
 import { WithdrawDialog } from "@/components/WithdrawDialog.tsx";
 import { ActivityStream } from "@/components/ActivityStream.tsx";
 import { useWallet } from "@/components/app/wallet-context.tsx";
+import { PageHead } from "@/components/app/PageHead.tsx";
 
 const short = (s: string, n = 4) => (s.length > 2 * n ? `${s.slice(0, n)}…${s.slice(-n)}` : s);
 
@@ -52,13 +53,12 @@ export default function Terminal() {
 
   return (
     <>
-      <div className="app-pagehead">
-        <h1>Terminal</h1>
-        <p>
-          Shielded by default. Amounts and holders are hidden behind zero-knowledge proofs; reveal
-          one only by a deliberate act, settle it on Stellar testnet in seconds.
-        </p>
-      </div>
+      <PageHead
+        eyebrow="Settle"
+        accent="cyan"
+        title="Terminal"
+        desc="Shielded by default. Amounts and holders are hidden behind zero-knowledge proofs; reveal one only by a deliberate act, settle it on Stellar testnet in seconds."
+      />
 
       <div className="app-grid" style={{ marginBottom: 16 }}>
         <Stat span={3} label="Total value · shielded" accent="cyan">

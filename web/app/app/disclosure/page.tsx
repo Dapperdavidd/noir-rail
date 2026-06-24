@@ -1,3 +1,5 @@
+import { PageHead } from "@/components/app/PageHead.tsx";
+
 export default function Disclosure() {
   const layers = [
     { n: "01", t: "Viewing keys", d: "Hand a derived read-only key to an auditor or fund administrator — standing line of sight into a stream of positions, scoped by asset, counterparty, or time window, revocable at the next note rotation. Never spend authority.", accent: "cyan" },
@@ -6,14 +8,12 @@ export default function Disclosure() {
   ];
   return (
     <>
-      <div className="app-pagehead">
-        <h1>Disclosure <span className="badge amber" style={{ verticalAlign: "middle", marginLeft: 8 }}>Phase 2</span></h1>
-        <p>
-          Auditability without surveillance. The right party sees the right thing; no one sees
-          everything; there is no master key. Three independent layers deliver it — shipping in
-          Phase 2 of the build plan.
-        </p>
-      </div>
+      <PageHead
+        eyebrow="Audit"
+        accent="amber"
+        title={<>Disclosure <span className="badge amber" style={{ verticalAlign: "middle", marginLeft: 8 }}>Phase 2</span></>}
+        desc="Auditability without surveillance. The right party sees the right thing; no one sees everything; there is no master key. Three independent layers deliver it — shipping in Phase 2 of the build plan."
+      />
 
       <div className="app-grid">
         {layers.map((l) => (
