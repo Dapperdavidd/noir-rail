@@ -12,10 +12,10 @@
   --card-2: #181c22;
   --line: #23272f;
   --line-2: #2c313a;
-  --ink: #f4f6f8;
-  --ink-2: #aab3bf;
-  --ink-3: #6b7480;
-  --ink-4: #444b55;
+  --ink: #f7f9fb;
+  --ink-2: #c8d0db;
+  --ink-3: #8b95a3;
+  --ink-4: #545c68;
   --amber: #e7b25c;
   --amber-dim: rgba(231, 178, 92, 0.14);
   --cyan: #5bd9d2;
@@ -56,15 +56,18 @@
 }
 
 html {
-  background: var(--bg);
-  color-scheme: dark;
-}
-
-body {
+  /* Solid base + accent glows live on <html> (the furthest-back paint layer) so the fixed,
+     negative-z-index background canvases (ColorBends, LivingBackground) remain visible. */
   background:
     radial-gradient(1200px 600px at 50% -10%, rgba(231, 178, 92, 0.05), transparent 60%),
     radial-gradient(900px 500px at 100% 0%, rgba(91, 217, 210, 0.04), transparent 55%),
     var(--bg);
+  color-scheme: dark;
+}
+
+body {
+  /* Transparent so it never paints over the negative-z-index background layers. */
+  background: transparent;
   color: var(--ink);
   font-family: var(--font-sans, system-ui), system-ui, sans-serif;
   font-feature-settings: "cv03", "cv04", "ss01";

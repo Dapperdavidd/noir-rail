@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { Reveal, Magnetic, Parallax, Counter } from "@/components/landing/ui.tsx";
 import { TerminalMock } from "@/components/landing/TerminalMock.tsx";
 import { LivingBackground } from "@/components/landing/LivingBackground.tsx";
+import ColorBends from "@/components/landing/ColorBends";
 
 export default function Landing() {
   // Torchlight: one delegated listener writes the cursor position into the hovered card's
@@ -69,7 +70,42 @@ export default function Landing() {
 function Background() {
   return (
     <>
-      <LivingBackground />
+      {/* Deepest layer: ColorBends WebGL bends, in the Obsidian Clearing palette, kept restrained
+          so it reads as atmosphere beneath the living rails — not a crypto-site gradient. */}
+      <div
+        aria-hidden
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: -2,
+          pointerEvents: "none",
+          opacity: 0.55,
+          maskImage: "linear-gradient(180deg, #000 0%, #000 62%, transparent 100%)",
+          WebkitMaskImage: "linear-gradient(180deg, #000 0%, #000 62%, transparent 100%)",
+        }}
+      >
+        {/* One calm gold ribbon — bright highlights, dark troughs — for the "less is more" feel. */}
+        <ColorBends
+          colors={["#f0d39a", "#e7b25c", "#c0940c", "#4a3506"]}
+          rotation={90}
+          autoRotate={1}
+          speed={0.16}
+          scale={1.25}
+          frequency={1}
+          warpStrength={1}
+          mouseInfluence={0.7}
+          parallax={0.5}
+          noise={0}
+          iterations={2}
+          intensity={1.25}
+          bandWidth={7}
+          transparent
+        />
+      </div>
+      {/* The living rails are kept to a faint texture so the gold ribbon and the copy lead. */}
+      <div aria-hidden style={{ opacity: 0.18 }}>
+        <LivingBackground />
+      </div>
       <div className="lp-grain" />
     </>
   );
