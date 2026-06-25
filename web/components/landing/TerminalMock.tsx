@@ -56,9 +56,9 @@ export function TerminalMock() {
           { k: "Disclosed this month", v: <span className="num revealed">$2.40M</span> },
           { k: "Pending settlement", v: <span className="num" style={{ color: "var(--amber)" }}>1</span> },
         ].map((s, i) => (
-          <div key={i} style={{ padding: "16px 18px", borderRight: i < 2 ? "1px solid var(--line)" : "none" }}>
+          <div key={i} className="lp-termcell" style={{ padding: "16px 18px", borderRight: i < 2 ? "1px solid var(--line)" : "none" }}>
             <div className="lp-asub" style={{ marginBottom: 8 }}>{s.k}</div>
-            <div style={{ fontSize: 18 }}>{s.v}</div>
+            <div className="lp-termval" style={{ fontSize: 18 }}>{s.v}</div>
           </div>
         ))}
       </div>
@@ -120,20 +120,20 @@ function Row({
           <div className="lp-asub">{sub}</div>
         </div>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
+      <div className="lp-rowmeta" style={{ display: "flex", alignItems: "center", gap: 28 }}>
         {yield_ && (
-          <div style={{ textAlign: "right" }}>
+          <div className="lp-rowsec" style={{ textAlign: "right" }}>
             <div className="lp-asub">Yield · APY</div>
             <div className="num" style={{ color: "var(--green)", fontSize: 13 }}>{yield_}</div>
           </div>
         )}
         {status && (
-          <div style={{ textAlign: "right" }}>
+          <div className="lp-rowsec" style={{ textAlign: "right" }}>
             <div className="lp-asub">Status</div>
             <div style={{ color: "var(--amber)", fontSize: 13 }}>{status}</div>
           </div>
         )}
-        <div style={{ minWidth: 132, textAlign: "right" }}>{children}</div>
+        <div className="lp-rowval" style={{ minWidth: 132, textAlign: "right" }}>{children}</div>
       </div>
     </div>
   );

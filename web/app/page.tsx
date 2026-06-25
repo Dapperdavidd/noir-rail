@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState, type CSSProperties } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Reveal, Magnetic, Parallax, Counter } from "@/components/landing/ui.tsx";
+import { MobileCarousel } from "@/components/landing/MobileCarousel.tsx";
 import { TerminalMock } from "@/components/landing/TerminalMock.tsx";
 import { LivingBackground } from "@/components/landing/LivingBackground.tsx";
 import ColorBends from "@/components/landing/ColorBends";
@@ -407,6 +408,16 @@ function Features() {
             </Reveal>
           ))}
         </div>
+        <MobileCarousel
+          items={FEATURES}
+          render={(f) => (
+            <div className="lp-tile torch" style={{ "--accent": f.accent } as CSSProperties}>
+              <div className="ic" aria-hidden>{f.ic}</div>
+              <h3>{f.t}</h3>
+              <p>{f.d}</p>
+            </div>
+          )}
+        />
       </div>
     </section>
   );
@@ -463,6 +474,18 @@ function SettlementPath() {
             </Reveal>
           ))}
         </div>
+        <MobileCarousel
+          items={STEPS}
+          render={(s) => (
+            <div className="lp-step torch">
+              <div>
+                <div className="n">{s.n}</div>
+                <h3>{s.h}</h3>
+                <p>{s.p}</p>
+              </div>
+            </div>
+          )}
+        />
       </div>
     </section>
   );

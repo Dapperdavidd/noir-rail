@@ -815,6 +815,53 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
   .lp-final { padding-left: 18px; padding-right: 18px; }
 }
 
+/* Chips stay on one line; the hero status chip shrinks just enough to fit. */
+.lp-chip { white-space: nowrap; }
+@media (max-width: 430px) {
+  .lp-chip { font-size: 10.5px; gap: 6px; padding: 0 11px; }
+}
+@media (max-width: 360px) {
+  .lp-chip { font-size: 9.7px; letter-spacing: 0.02em; }
+}
+
+/* ============================================================================
+   Mobile carousels — Features + Settlement steps swipe horizontally with the
+   centred card lifted to the front. Hidden on desktop (the grid shows instead).
+   ============================================================================ */
+.mcar { display: none; }
+@media (max-width: 640px) {
+  .lp-bento, .lp-steps { display: none; }
+  .mcar {
+    display: flex; align-items: stretch; gap: 14px;
+    overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain;
+    padding: 12px 11% 20px; margin: 0 -18px; /* bleed to the screen edges */
+    scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  }
+  .mcar::-webkit-scrollbar { display: none; }
+  .mcar-item {
+    flex: 0 0 78%; scroll-snap-align: center;
+    opacity: 0.4; transform: scale(0.9); transform-origin: center;
+    transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .mcar-item.active { opacity: 1; transform: scale(1); }
+  .mcar-item > * { height: 100%; }
+  /* the cards fill their slide; reset desktop margins/spans */
+  .mcar-item .lp-tile, .mcar-item .lp-step { margin: 0; height: 100%; }
+}
+
+/* ============================================================================
+   TerminalMock — reflow on mobile (drop secondary columns) rather than shrink
+   ============================================================================ */
+@media (max-width: 640px) {
+  .lp-urlbar { font-size: 10.5px; }
+  .lp-termcell { padding: 12px 12px !important; }
+  .lp-termval { font-size: 15px !important; }
+  .lp-glassrow { padding: 13px 14px; }
+  .lp-rowsec { display: none; }          /* yield / status are secondary on a phone */
+  .lp-rowval { min-width: 0 !important; }
+  .lp-aname { font-size: 13px; }
+}
+
 /* ============================================================================
    Landing mobile nav — hamburger + anchored dropdown (top-right, not full-screen)
    ============================================================================ */
