@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { Reveal, Magnetic, Parallax, Counter } from "@/components/landing/ui.tsx";
 import { TerminalMock } from "@/components/landing/TerminalMock.tsx";
 import { LivingBackground } from "@/components/landing/LivingBackground.tsx";
+import { Preloader } from "@/components/landing/Preloader.tsx";
 import ColorBends from "@/components/landing/ColorBends";
 
 export default function Landing() {
@@ -50,6 +51,7 @@ export default function Landing() {
 
   return (
     <main className="lp">
+      <Preloader />
       <Background />
       <Nav />
       <Hero />
