@@ -9,6 +9,7 @@ import { WithdrawDialog } from "@/components/WithdrawDialog.tsx";
 import { ActivityStream } from "@/components/ActivityStream.tsx";
 import { useWallet } from "@/components/app/wallet-context.tsx";
 import { PageHead } from "@/components/app/PageHead.tsx";
+import { Sk } from "@/components/app/Skeleton.tsx";
 
 const short = (s: string, n = 4) => (s.length > 2 * n ? `${s.slice(0, n)}…${s.slice(-n)}` : s);
 
@@ -16,6 +17,7 @@ export default function Terminal() {
   const { wallet } = useWallet();
   const [pool, setPool] = useState<PoolState | null>(null);
   const [poolError, setPoolError] = useState<string | null>(null);
+  const [poolLoading, setPoolLoading] = useState(true);
   const [notes, setNotes] = useState<StoredNote[]>([]);
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
   const [shieldOpen, setShieldOpen] = useState(false);
@@ -28,8 +30,14 @@ export default function Terminal() {
       setPoolError(null);
     } catch (e) {
       setPoolError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setPoolLoading(false);
     }
   }, []);
+
+  // Show skeletons only on the first load — later refreshes (after a settlement)
+  // already have data, so we keep the value visible instead of flickering.
+  const showPoolSk = poolLoading && !pool;
 
   useEffect(() => {
     setNotes(loadNotes());
@@ -64,6 +72,8 @@ export default function Terminal() {
         <Stat span={3} label="Total value · shielded" accent="cyan">
           {wallet ? (
             <span className="shielded" style={{ fontSize: 15 }}>view ●●●●</span>
+          ) : showPoolSk ? (
+            <Sk w={120} h={26} r={7} />
           ) : (
             <span className="num stat-value">{pool ? formatAmount(pool.balance) : "—"}</span>
           )}
@@ -74,13 +84,21 @@ export default function Terminal() {
           <div className="help">{liveNotes.length ? `${formatAmount(totalShielded)} ${ASSET.symbol} held` : "none yet"}</div>
         </Stat>
         <Stat span={3} label="Pool commitments" accent="amber">
-          <span className="num stat-value amber">{pool ? pool.commitmentCount : "—"}</span>
+          {showPoolSk ? (
+            <Sk w={80} h={26} r={7} />
+          ) : (
+            <span className="num stat-value amber">{pool ? pool.commitmentCount : "—"}</span>
+          )}
           <div className="help">notes in the tree</div>
         </Stat>
         <Stat span={3} label="State root" accent="violet">
-          <span className="mono" style={{ fontSize: 13, wordBreak: "break-all", color: "var(--violet)" }}>
-            {pool ? short(pool.root, 7) : "—"}
-          </span>
+          {showPoolSk ? (
+            <Sk w={130} h={16} r={6} />
+          ) : (
+            <span className="mono" style={{ fontSize: 13, wordBreak: "break-all", color: "var(--violet)" }}>
+              {pool ? short(pool.root, 7) : "—"}
+            </span>
+          )}
           <div className="help">live · Merkle commitment</div>
         </Stat>
       </div>

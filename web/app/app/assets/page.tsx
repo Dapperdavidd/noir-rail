@@ -5,11 +5,13 @@ import { useEffect, useState } from "react";
 import { ASSET, formatAmount } from "@/lib/config.ts";
 import { fetchPoolState, type PoolState } from "@/lib/stellar.ts";
 import { PageHead } from "@/components/app/PageHead.tsx";
+import { Sk } from "@/components/app/Skeleton.tsx";
 
 export default function Assets() {
   const [pool, setPool] = useState<PoolState | null>(null);
+  const [loading, setLoading] = useState(true);
   useEffect(() => {
-    fetchPoolState("").then(setPool).catch(() => setPool(null));
+    fetchPoolState("").then(setPool).catch(() => setPool(null)).finally(() => setLoading(false));
   }, []);
 
   return (
@@ -34,8 +36,8 @@ export default function Assets() {
             <span className="badge cyan" style={{ marginLeft: "auto" }}>Active</span>
           </div>
           <div className="app-grid" style={{ gap: 12 }}>
-            <Mini span={6} k="Pool TVL" v={pool ? `${formatAmount(pool.balance)}` : "—"} />
-            <Mini span={6} k="Commitments" v={pool ? String(pool.commitmentCount) : "—"} />
+            <Mini span={6} k="Pool TVL" v={pool ? `${formatAmount(pool.balance)}` : "—"} loading={loading} />
+            <Mini span={6} k="Commitments" v={pool ? String(pool.commitmentCount) : "—"} loading={loading} />
           </div>
           <Link href="/app/terminal" className="btn primary" style={{ marginTop: 16, width: "100%" }}>
             Open in terminal →
@@ -55,11 +57,15 @@ export default function Assets() {
   );
 }
 
-function Mini({ k, v, span }: { k: string; v: string; span: number }) {
+function Mini({ k, v, span, loading }: { k: string; v: string; span: number; loading?: boolean }) {
   return (
     <div style={{ gridColumn: `span ${span}`, border: "1px solid var(--line)", borderRadius: 10, padding: 14 }}>
       <div className="eyebrow" style={{ marginBottom: 8 }}>{k}</div>
-      <div className="num" style={{ fontSize: 22, letterSpacing: "-0.02em" }}>{v}</div>
+      {loading ? (
+        <Sk w={90} h={22} r={6} />
+      ) : (
+        <div className="num" style={{ fontSize: 22, letterSpacing: "-0.02em" }}>{v}</div>
+      )}
     </div>
   );
 }

@@ -8,17 +8,23 @@ import { loadNotes, type StoredNote } from "@/lib/notes.ts";
 import { ActivityStream } from "@/components/ActivityStream.tsx";
 import { useWallet } from "@/components/app/wallet-context.tsx";
 import { PageHead } from "@/components/app/PageHead.tsx";
+import { Sk } from "@/components/app/Skeleton.tsx";
 
 const short = (s: string, n = 6) => (s.length > 2 * n ? `${s.slice(0, n)}…${s.slice(-n)}` : s);
 
 export default function Overview() {
   const { wallet } = useWallet();
   const [pool, setPool] = useState<PoolState | null>(null);
+  const [poolLoading, setPoolLoading] = useState(true);
   const [notes, setNotes] = useState<StoredNote[]>([]);
 
   useEffect(() => {
     setNotes(loadNotes());
-    fetchPoolState(wallet?.publicKey() ?? "").then(setPool).catch(() => setPool(null));
+    setPoolLoading(true);
+    fetchPoolState(wallet?.publicKey() ?? "")
+      .then(setPool)
+      .catch(() => setPool(null))
+      .finally(() => setPoolLoading(false));
   }, [wallet]);
 
   const live = notes.filter((n) => !n.spent);
@@ -37,6 +43,8 @@ export default function Overview() {
         <Tile span={3} label="Total value · shielded" accent="cyan">
           {wallet ? (
             <span className="shielded" style={{ fontSize: 15 }}>view ●●●●</span>
+          ) : poolLoading ? (
+            <Sk w={120} h={26} r={7} />
           ) : (
             <span className="num stat-value">{pool ? formatAmount(pool.balance) : "—"}</span>
           )}
@@ -47,13 +55,21 @@ export default function Overview() {
           <div className="help">{live.length ? `${formatAmount(held)} ${ASSET.symbol} held` : "none yet"}</div>
         </Tile>
         <Tile span={3} label="Pool commitments" accent="amber">
-          <span className="num stat-value amber">{pool ? pool.commitmentCount : "—"}</span>
+          {poolLoading ? (
+            <Sk w={80} h={26} r={7} />
+          ) : (
+            <span className="num stat-value amber">{pool ? pool.commitmentCount : "—"}</span>
+          )}
           <div className="help">notes in the tree</div>
         </Tile>
         <Tile span={3} label="State root" accent="violet">
-          <span className="mono" style={{ fontSize: 13, color: "var(--violet)", wordBreak: "break-all" }}>
-            {pool ? short(pool.root, 7) : "—"}
-          </span>
+          {poolLoading ? (
+            <Sk w={130} h={16} r={6} />
+          ) : (
+            <span className="mono" style={{ fontSize: 13, color: "var(--violet)", wordBreak: "break-all" }}>
+              {pool ? short(pool.root, 7) : "—"}
+            </span>
+          )}
           <div className="help">live · Merkle root</div>
         </Tile>
       </div>
