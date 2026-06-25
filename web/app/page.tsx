@@ -113,14 +113,35 @@ function Background() {
 
 /* ------------------------------------------------------------------------ nav */
 
+const NAV_LINKS: [string, string][] = [
+  ["Product", "#features"],
+  ["How it works", "#how"],
+  ["Security", "#security"],
+  ["FAQ", "#faq"],
+];
+
 function Nav() {
   const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // Lock body scroll while the mobile menu is open; close it on Escape.
+  useEffect(() => {
+    document.body.classList.toggle("nav-open", menuOpen);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenuOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.classList.remove("nav-open");
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
+
   return (
     <nav className={`lp-nav ${scrolled ? "scrolled" : ""}`}>
       <div className="lp-container">
@@ -130,6 +151,7 @@ function Nav() {
             className="lp-wordmark"
             onClick={(e) => {
               e.preventDefault();
+              setMenuOpen(false);
               window.scrollTo({ top: 0, behavior: "smooth" });
             }}
             aria-label="NoirRail — back to top"
@@ -137,19 +159,83 @@ function Nav() {
             Noir<em>Rail</em>
           </a>
           <div className="lp-navlinks">
-            <a className="lp-navlink" href="#features">Product</a>
-            <a className="lp-navlink" href="#how">How it works</a>
-            <a className="lp-navlink" href="#security">Security</a>
-            <a className="lp-navlink" href="#faq">FAQ</a>
+            {NAV_LINKS.map(([label, href]) => (
+              <a key={href} className="lp-navlink" href={href}>{label}</a>
+            ))}
           </div>
-          <Magnetic strength={0.35}>
-            <Link href="/app" className="lp-cta primary" style={{ height: 40, padding: "0 16px" }}>
-              Launch <span className="arrow">→</span>
-            </Link>
-          </Magnetic>
+          <div className="lp-nav-right">
+            <Magnetic strength={0.35}>
+              <Link href="/app" className="lp-cta primary" style={{ height: 40, padding: "0 16px" }}>
+                Launch <span className="arrow">→</span>
+              </Link>
+            </Magnetic>
+            <button
+              className="lp-burger"
+              onClick={() => setMenuOpen((o) => !o)}
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={menuOpen}
+            >
+              <BurgerIcon open={menuOpen} />
+            </button>
+          </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            className="lp-mobnav"
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+          >
+            {NAV_LINKS.map(([label, href], i) => (
+              <motion.a
+                key={href}
+                href={href}
+                className="lp-mobnav-link"
+                onClick={() => setMenuOpen(false)}
+                initial={{ opacity: 0, x: -16 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.06 + i * 0.05, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              >
+                {label} <span className="arrow">→</span>
+              </motion.a>
+            ))}
+            <motion.div
+              className="lp-mobnav-foot"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.06 + NAV_LINKS.length * 0.05 }}
+            >
+              <Link href="/app" className="lp-cta primary" onClick={() => setMenuOpen(false)}>
+                Launch the app <span className="arrow">→</span>
+              </Link>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
+  );
+}
+
+function BurgerIcon({ open }: { open: boolean }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden>
+      {open ? (
+        <>
+          <path d="M6 6l12 12" />
+          <path d="M18 6 6 18" />
+        </>
+      ) : (
+        <>
+          <path d="M3 7h18" />
+          <path d="M3 12h18" />
+          <path d="M3 17h18" />
+        </>
+      )}
+    </svg>
   );
 }
 
@@ -439,7 +525,7 @@ function Security() {
               </div>
             </Reveal>
           </div>
-          <Reveal delay={0.1}>
+          <Reveal delay={0.1} className="lp-tablewrap">
             <table className="lp-table">
               <thead>
                 <tr><th>Party</th><th>Amount</th><th>Counterparties</th><th>History</th></tr>

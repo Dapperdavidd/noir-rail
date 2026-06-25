@@ -55,6 +55,10 @@
   padding: 0;
 }
 
+/* Links are styled per-component (nav items, buttons, cards) — never bare blue
+   underlines. Prose links re-add their own underline via border-bottom. */
+a { color: inherit; text-decoration: none; }
+
 html {
   /* Solid base + accent glows live on <html> (the furthest-back paint layer) so the fixed,
      negative-z-index background canvases (ColorBends, LivingBackground) remain visible. */
@@ -683,3 +687,94 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
 @media (prefers-reduced-motion: reduce) {
   .sk::after { animation: none; }
 }
+
+/* ============================================================================
+   RESPONSIVE — PC → tablet → mobile. The app pages place tiles with inline
+   `grid-column: span N` against a 12-col grid; below desktop we re-flow that
+   grid (and override the inline spans with !important) so nothing crushes.
+   ============================================================================ */
+
+/* ---- App grid re-flow ---- */
+/* Tablet / small laptop: collapse the 12-col grid to two even columns. */
+@media (max-width: 1080px) {
+  .app-grid { grid-template-columns: repeat(2, 1fr); }
+  .app-grid > * { grid-column: span 1 !important; }
+}
+/* Phone: everything stacks to a single column. */
+@media (max-width: 640px) {
+  .app-grid { grid-template-columns: 1fr; gap: 12px; }
+  .app-grid > * { grid-column: 1 / -1 !important; }
+}
+
+/* ---- App topbar / chrome on small screens ---- */
+@media (max-width: 860px) {
+  .app-topbar { padding: 0 16px; gap: 12px; }
+  .app-mobilebar .badge { padding: 7px 12px; font-size: 11px; }
+}
+@media (max-width: 520px) {
+  /* the mobilebar already shows the current section, so the crumb is redundant */
+  .app-crumb { display: none; }
+  .app-pagehead h1 { font-size: 25px; }
+}
+
+/* ---- Terminal position rows: stack the balance/actions under the asset ---- */
+@media (max-width: 560px) {
+  .pos-row { flex-wrap: wrap; gap: 14px; }
+  .pos-row-actions { width: 100%; justify-content: space-between; gap: 12px; }
+  .pos-row-actions > div { text-align: left !important; min-width: 0 !important; }
+}
+
+/* ---- Tables: let wide tables scroll horizontally instead of overflowing.
+   `display:block` keeps the internal table layout (anonymous table box) while
+   turning the element into a horizontal scroll container. ---- */
+@media (max-width: 640px) {
+  .lp-tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 14px; }
+  .lp-tablewrap .lp-table { min-width: 460px; }
+  .prose table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap; }
+}
+
+/* ---- Landing: tighter gutters + section rhythm on phones ---- */
+@media (max-width: 480px) {
+  .lp-container { padding: 0 18px; }
+  .lp-cta { height: 46px; padding: 0 18px; width: 100%; justify-content: center; }
+  .lp-final { padding-left: 18px; padding-right: 18px; }
+}
+
+/* ============================================================================
+   Landing mobile nav — hamburger + full-screen overlay menu
+   ============================================================================ */
+/* Keep the bar (wordmark + close button) above the overlay so it stays clickable. */
+.lp-nav-inner { position: relative; z-index: 61; }
+.lp-nav-right { display: flex; align-items: center; gap: 10px; }
+.lp-burger {
+  display: none; width: 42px; height: 42px; flex-shrink: 0; place-items: center;
+  border-radius: 11px; border: 1px solid var(--line-2); background: rgba(255, 255, 255, 0.02);
+  color: var(--ink); cursor: pointer; transition: border-color 0.2s, background 0.2s;
+}
+.lp-burger:hover { border-color: var(--ink-4); background: rgba(255, 255, 255, 0.05); }
+
+.lp-mobnav {
+  position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column;
+  padding: 96px 24px 36px; gap: 4px;
+  background: rgba(8, 9, 11, 0.97); backdrop-filter: blur(20px) saturate(140%);
+}
+.lp-mobnav-link {
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: var(--font-display), system-ui, sans-serif; font-weight: 600;
+  font-size: 26px; letter-spacing: -0.025em; color: var(--ink);
+  padding: 18px 2px; border-bottom: 1px solid var(--line);
+}
+.lp-mobnav-link .arrow { color: var(--ink-4); font-size: 20px; }
+.lp-mobnav-link:active { color: var(--amber); }
+.lp-mobnav-foot { margin-top: auto; display: flex; flex-direction: column; gap: 14px; }
+
+/* Show the hamburger exactly where the inline section links drop out (≤900px). */
+@media (max-width: 900px) {
+  .lp-burger { display: grid; }
+}
+@media (min-width: 901px) {
+  .lp-mobnav { display: none; }
+}
+body.nav-open { overflow: hidden; }
+/* When the overlay menu is open, drop the redundant inline CTA — the menu has its own. */
+body.nav-open .lp-nav-right .lp-cta { display: none; }

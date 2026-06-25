@@ -104,7 +104,7 @@ export default function Terminal() {
       </div>
 
       <div className="app-tile" style={{ padding: 0, overflow: "hidden" }}>
-        <div className="between" style={{ padding: "18px 22px" }}>
+        <div className="between pos-row" style={{ padding: "18px 22px" }}>
           <div className="row">
             <strong style={{ fontSize: 15 }}>Positions</strong>
             <span className="eyebrow">amounts shielded by default</span>
@@ -185,7 +185,7 @@ function Stat({ label, span, accent, children }: { label: string; span: number; 
 function PositionRow({ note, revealed, onToggle, onSettle }: { note: StoredNote; revealed: boolean; onToggle: () => void; onSettle: () => void }) {
   const initial = note.scope.replace(/[^a-zA-Z]/g, "").slice(0, 2).toUpperCase() || "NR";
   return (
-    <div className="between" style={{ padding: "16px 22px", borderTop: "1px solid var(--line)" }}>
+    <div className="between pos-row" style={{ padding: "16px 22px", borderTop: "1px solid var(--line)" }}>
       <div className="row" style={{ gap: 14 }}>
         <div style={{ width: 36, height: 36, borderRadius: 9, background: "var(--amber-dim)", color: "var(--amber)", display: "grid", placeItems: "center", fontFamily: "var(--font-mono)", fontSize: 13 }}>
           {initial}
@@ -195,7 +195,7 @@ function PositionRow({ note, revealed, onToggle, onSettle }: { note: StoredNote;
           <div className="eyebrow">shielded note · {ASSET.symbol}</div>
         </div>
       </div>
-      <div className="row" style={{ gap: 28 }}>
+      <div className="row pos-row-actions" style={{ gap: 28 }}>
         <div style={{ textAlign: "right", minWidth: 150 }}>
           <div className="eyebrow" style={{ marginBottom: 6 }}>balance</div>
           {revealed ? (
