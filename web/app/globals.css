@@ -663,3 +663,23 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
 /* section eyebrow for page identity */
 .app-eyebrow { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-eyebrow); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 600; margin-bottom: 12px; }
 .app-eyebrow::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; box-shadow: 0 0 8px currentColor; }
+
+/* ============================================================================
+   Skeletons — Vercel-style "blank slate" placeholders shown while a page's
+   code/data streams in. A shimmer sweeps across each block.
+   ============================================================================ */
+.sk {
+  position: relative; overflow: hidden; display: block;
+  background: rgba(255, 255, 255, 0.035); border-radius: 6px;
+}
+.sk::after {
+  content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+  animation: sk-shimmer 1.5s ease-in-out infinite;
+}
+.sk-line { height: 12px; border-radius: 5px; }
+.sk-tile { min-height: 96px; } /* sits inside .app-tile, so it inherits the card chrome */
+@keyframes sk-shimmer { to { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) {
+  .sk::after { animation: none; }
+}
