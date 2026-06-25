@@ -689,51 +689,126 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
 }
 
 /* ============================================================================
-   RESPONSIVE — PC → tablet → mobile. The app pages place tiles with inline
-   `grid-column: span N` against a 12-col grid; below desktop we re-flow that
-   grid (and override the inline spans with !important) so nothing crushes.
+   RESPONSIVE — PC → tablet → mobile.
+   App pages place tiles with inline `grid-column: span N` on a 12-col grid; we
+   re-flow that grid below desktop and override the inline spans with !important.
    ============================================================================ */
 
 /* ---- App grid re-flow ---- */
-/* Tablet / small laptop: collapse the 12-col grid to two even columns. */
+/* Tablet / small laptop: two even columns. */
 @media (max-width: 1080px) {
   .app-grid { grid-template-columns: repeat(2, 1fr); }
   .app-grid > * { grid-column: span 1 !important; }
 }
-/* Phone: everything stacks to a single column. */
+/* Phone: bento — stat tiles sit 2-up (.mob-half); everything else spans full. */
 @media (max-width: 640px) {
-  .app-grid { grid-template-columns: 1fr; gap: 12px; }
+  .app-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
   .app-grid > * { grid-column: 1 / -1 !important; }
+  .app-grid > .mob-half { grid-column: span 1 !important; }
+  .app-tile { padding: 16px; }
+  .stat-value { font-size: 26px; }
 }
 
-/* ---- App topbar / chrome on small screens ---- */
+/* ---- App chrome on small screens: tighter topbar, content clears bottom nav ---- */
 @media (max-width: 860px) {
-  .app-topbar { padding: 0 16px; gap: 12px; }
-  .app-mobilebar .badge { padding: 7px 12px; font-size: 11px; }
+  .app-topbar { padding: 0 14px; gap: 10px; }
+  .app-crumb { display: none; } /* the bottom nav carries the current section */
+  .app-content { padding: 20px 14px calc(88px + env(safe-area-inset-bottom)); }
 }
-@media (max-width: 520px) {
-  /* the mobilebar already shows the current section, so the crumb is redundant */
-  .app-crumb { display: none; }
+@media (max-width: 560px) {
+  .app-pagehead { margin-bottom: 22px; }
   .app-pagehead h1 { font-size: 25px; }
 }
 
-/* ---- Terminal position rows: stack the balance/actions under the asset ---- */
+/* ---- Mobile topbar brand (hidden on desktop, where the sidebar carries it) ---- */
+.app-topbrand { display: none; align-items: center; gap: 9px; }
+.app-topbrand .mark { width: 26px; height: 26px; border-radius: 7px; display: grid; place-items: center;
+  background: linear-gradient(180deg, #f0c074, var(--amber)); color: #1a1206; font-family: var(--font-display); font-weight: 700; font-size: 14px; }
+.app-topbrand .wm { font-family: var(--font-display); font-weight: 600; font-size: 16px; letter-spacing: -0.03em; color: var(--ink); }
+.app-topbrand .wm em { color: var(--amber); font-style: normal; }
+@media (max-width: 860px) { .app-topbrand { display: flex; } }
+/* Phones: compact the connect button to just "Connect". */
+@media (max-width: 560px) { .wallet-extra { display: none; } }
+
+/* ---- Mobile bottom navigation + slide-up "More" sheet ---- */
+.app-bottomnav, .app-sheet, .app-sheet-backdrop { display: none; }
+@media (max-width: 860px) {
+  .app-bottomnav {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 70;
+    display: flex; justify-content: space-around; align-items: stretch;
+    padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
+    background: rgba(10, 12, 16, 0.88); backdrop-filter: blur(18px) saturate(140%);
+    border-top: 1px solid var(--line);
+  }
+  .app-bottomtab {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 4px 2px; background: none; border: none; cursor: pointer;
+    color: var(--ink-4); font-family: var(--font-eyebrow); font-size: 10px; letter-spacing: 0.02em;
+    transition: color 0.18s; -webkit-tap-highlight-color: transparent;
+  }
+  .app-bottomtab .ic { width: 21px; height: 21px; }
+  .app-bottomtab.active { color: var(--amber); }
+  .app-bottomtab.active .ic { filter: drop-shadow(0 0 7px rgba(231, 178, 92, 0.5)); }
+
+  .app-sheet-backdrop { display: block; position: fixed; inset: 0; z-index: 71; background: rgba(4, 5, 7, 0.55); backdrop-filter: blur(2px); }
+  .app-sheet {
+    display: flex; flex-direction: column; gap: 4px;
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 72;
+    padding: 10px 12px calc(18px + env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, var(--card-2), var(--card));
+    border-top: 1px solid var(--line-2); border-radius: 20px 20px 0 0;
+    box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.5);
+  }
+  .app-sheet-grip { width: 38px; height: 4px; border-radius: 999px; background: var(--line-2); margin: 4px auto 10px; }
+  .app-sheet-link { display: flex; align-items: center; gap: 13px; padding: 14px 12px; border-radius: 12px; color: var(--ink-2); font-size: 15px; transition: background 0.15s, color 0.15s; }
+  .app-sheet-link .ico { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.02); color: var(--ink-3); }
+  .app-sheet-link .ico .ic { width: 18px; height: 18px; }
+  .app-sheet-link .soon { margin-left: auto; font-family: var(--font-eyebrow); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-4); border: 1px solid var(--line-2); border-radius: 999px; padding: 2px 7px; }
+  .app-sheet-link .chev { margin-left: auto; color: var(--ink-4); font-size: 20px; }
+  .app-sheet-link .soon + .chev { margin-left: 10px; }
+  .app-sheet-link:active, .app-sheet-link.active { background: rgba(231, 178, 92, 0.08); color: var(--ink); }
+  .app-sheet-link.active .ico { color: var(--amber); border-color: rgba(231, 178, 92, 0.3); }
+}
+
+/* ---- Terminal position rows: stack balance/actions under the asset ---- */
 @media (max-width: 560px) {
   .pos-row { flex-wrap: wrap; gap: 14px; }
   .pos-row-actions { width: 100%; justify-content: space-between; gap: 12px; }
   .pos-row-actions > div { text-align: left !important; min-width: 0 !important; }
 }
 
-/* ---- Tables: let wide tables scroll horizontally instead of overflowing.
-   `display:block` keeps the internal table layout (anonymous table box) while
-   turning the element into a horizontal scroll container. ---- */
+/* ---- Tables: scroll horizontally instead of overflowing. `display:block` keeps
+   the internal table layout (anonymous table box) as a scroll container. ---- */
 @media (max-width: 640px) {
   .lp-tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 14px; }
   .lp-tablewrap .lp-table { min-width: 460px; }
   .prose table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap; }
 }
 
-/* ---- Landing: tighter gutters + section rhythm on phones ---- */
+/* ============================================================================
+   LANDING responsive — sleeker, denser on phones
+   ============================================================================ */
+/* Stat row reads as a 2×2 bento, not a stacked file. */
+@media (max-width: 560px) {
+  .lp-stats { grid-template-columns: repeat(2, 1fr); }
+  .lp-stat { padding: 20px 16px; }
+}
+/* Footer: brand on top, link columns side-by-side. */
+@media (max-width: 640px) {
+  .lp-foot-grid { grid-template-columns: 1fr 1fr; gap: 28px 20px; }
+  .lp-foot-grid > :first-child { grid-column: 1 / -1; }
+}
+/* Tighter rhythm + sizing so nothing feels squeezed. */
+@media (max-width: 560px) {
+  .lp-section { padding: clamp(56px, 14vw, 84px) 0; }
+  .lp-section.tight { padding: 44px 0; }
+  .lp-h1 { font-size: clamp(36px, 11vw, 52px); }
+  .lp-lead { font-size: 16px; }
+  .lp-tile { padding: 22px; }
+  .lp-step { padding: 22px; }
+  .lp-final { border-radius: 20px; }
+  .lp-footer { padding: 48px 0 32px; }
+}
 @media (max-width: 480px) {
   .lp-container { padding: 0 18px; }
   .lp-cta { height: 46px; padding: 0 18px; width: 100%; justify-content: center; }
@@ -741,40 +816,37 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
 }
 
 /* ============================================================================
-   Landing mobile nav — hamburger + full-screen overlay menu
+   Landing mobile nav — hamburger + anchored dropdown (top-right, not full-screen)
    ============================================================================ */
-/* Keep the bar (wordmark + close button) above the overlay so it stays clickable. */
 .lp-nav-inner { position: relative; z-index: 61; }
 .lp-nav-right { display: flex; align-items: center; gap: 10px; }
 .lp-burger {
   display: none; width: 42px; height: 42px; flex-shrink: 0; place-items: center;
-  border-radius: 11px; border: 1px solid var(--line-2); background: rgba(255, 255, 255, 0.02);
+  border-radius: 11px; border: 1px solid var(--line-2); background: rgba(255, 255, 255, 0.03);
   color: var(--ink); cursor: pointer; transition: border-color 0.2s, background 0.2s;
 }
-.lp-burger:hover { border-color: var(--ink-4); background: rgba(255, 255, 255, 0.05); }
+.lp-burger:hover { border-color: var(--ink-4); background: rgba(255, 255, 255, 0.06); }
 
+.lp-mobnav-backdrop { position: fixed; inset: 0; z-index: 55; background: rgba(4, 5, 7, 0.4); }
 .lp-mobnav {
-  position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column;
-  padding: 96px 24px 36px; gap: 4px;
-  background: rgba(8, 9, 11, 0.97); backdrop-filter: blur(20px) saturate(140%);
+  position: fixed; top: 72px; right: 16px; left: auto; z-index: 60;
+  width: min(280px, calc(100vw - 32px)); transform-origin: top right;
+  display: flex; flex-direction: column; gap: 2px; padding: 10px;
+  background: rgba(14, 16, 20, 0.92); backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid var(--line-2); border-radius: 18px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 .lp-mobnav-link {
   display: flex; align-items: center; justify-content: space-between;
-  font-family: var(--font-display), system-ui, sans-serif; font-weight: 600;
-  font-size: 26px; letter-spacing: -0.025em; color: var(--ink);
-  padding: 18px 2px; border-bottom: 1px solid var(--line);
+  font-size: 16px; font-weight: 500; color: var(--ink-2);
+  padding: 13px 14px; border-radius: 11px; transition: background 0.15s, color 0.15s;
 }
-.lp-mobnav-link .arrow { color: var(--ink-4); font-size: 20px; }
-.lp-mobnav-link:active { color: var(--amber); }
-.lp-mobnav-foot { margin-top: auto; display: flex; flex-direction: column; gap: 14px; }
+.lp-mobnav-link .arrow { color: var(--ink-4); transition: transform 0.2s, color 0.2s; }
+.lp-mobnav-link:hover, .lp-mobnav-link:active { background: rgba(255, 255, 255, 0.04); color: var(--ink); }
+.lp-mobnav-link:hover .arrow { transform: translateX(3px); color: var(--amber); }
+.lp-mobnav-cta { margin-top: 8px; width: 100%; height: 46px; justify-content: center; }
 
-/* Show the hamburger exactly where the inline section links drop out (≤900px). */
-@media (max-width: 900px) {
-  .lp-burger { display: grid; }
-}
-@media (min-width: 901px) {
-  .lp-mobnav { display: none; }
-}
+@media (max-width: 900px) { .lp-burger { display: grid; } }
+@media (min-width: 901px) { .lp-mobnav, .lp-mobnav-backdrop { display: none; } }
 body.nav-open { overflow: hidden; }
-/* When the overlay menu is open, drop the redundant inline CTA — the menu has its own. */
 body.nav-open .lp-nav-right .lp-cta { display: none; }

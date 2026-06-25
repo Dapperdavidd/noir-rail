@@ -49,7 +49,7 @@ export default function Activity() {
 
 function Ctx({ k, v, sub, span }: { k: string; v: string; sub: string; span: number }) {
   return (
-    <div className="app-tile" style={{ gridColumn: `span ${span}` }}>
+    <div className="app-tile mob-half" style={{ gridColumn: `span ${span}` }}>
       <div className="eyebrow" style={{ marginBottom: 10 }}>{k}</div>
       <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 22, letterSpacing: "-0.02em", color: "var(--ink)" }}>{v}</div>
       <div className="help" style={{ marginTop: 4 }}>{sub}</div>

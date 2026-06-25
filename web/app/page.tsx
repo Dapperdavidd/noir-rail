@@ -183,37 +183,41 @@ function Nav() {
 
       <AnimatePresence>
         {menuOpen && (
-          <motion.div
-            className="lp-mobnav"
-            initial={{ opacity: 0, y: -12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-          >
-            {NAV_LINKS.map(([label, href], i) => (
-              <motion.a
-                key={href}
-                href={href}
-                className="lp-mobnav-link"
-                onClick={() => setMenuOpen(false)}
-                initial={{ opacity: 0, x: -16 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.06 + i * 0.05, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              >
-                {label} <span className="arrow">→</span>
-              </motion.a>
-            ))}
+          <>
             <motion.div
-              className="lp-mobnav-foot"
+              className="lp-mobnav-backdrop"
+              onClick={() => setMenuOpen(false)}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.06 + NAV_LINKS.length * 0.05 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              aria-hidden
+            />
+            <motion.div
+              className="lp-mobnav"
+              initial={{ opacity: 0, scale: 0.96, y: -8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: -8 }}
+              transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
             >
-              <Link href="/app" className="lp-cta primary" onClick={() => setMenuOpen(false)}>
+              {NAV_LINKS.map(([label, href], i) => (
+                <motion.a
+                  key={href}
+                  href={href}
+                  className="lp-mobnav-link"
+                  onClick={() => setMenuOpen(false)}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.04 + i * 0.04, duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  {label} <span className="arrow">→</span>
+                </motion.a>
+              ))}
+              <Link href="/app" className="lp-cta primary lp-mobnav-cta" onClick={() => setMenuOpen(false)}>
                 Launch the app <span className="arrow">→</span>
               </Link>
             </motion.div>
-          </motion.div>
+          </>
         )}
       </AnimatePresence>
     </nav>

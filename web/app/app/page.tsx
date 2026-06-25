@@ -107,7 +107,7 @@ export default function Overview() {
 
 function Tile({ label, span, accent, children }: { label: string; span: number; accent?: "cyan" | "violet" | "amber"; children: React.ReactNode }) {
   return (
-    <div className="app-tile" style={{ gridColumn: `span ${span}`, minWidth: 0 }}>
+    <div className="app-tile mob-half" style={{ gridColumn: `span ${span}`, minWidth: 0 }}>
       <div className="eyebrow" style={{ marginBottom: 12 }}>{label}</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>{children}</div>
       {accent && <span style={{ position: "absolute", top: 16, right: 16, width: 6, height: 6, borderRadius: 999, background: `var(--${accent})`, boxShadow: `0 0 8px var(--${accent})` }} />}

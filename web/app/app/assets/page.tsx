@@ -59,7 +59,7 @@ export default function Assets() {
 
 function Mini({ k, v, span, loading }: { k: string; v: string; span: number; loading?: boolean }) {
   return (
-    <div style={{ gridColumn: `span ${span}`, border: "1px solid var(--line)", borderRadius: 10, padding: 14 }}>
+    <div className="mob-half" style={{ gridColumn: `span ${span}`, border: "1px solid var(--line)", borderRadius: 10, padding: 14 }}>
       <div className="eyebrow" style={{ marginBottom: 8 }}>{k}</div>
       {loading ? (
         <Sk w={90} h={22} r={6} />
