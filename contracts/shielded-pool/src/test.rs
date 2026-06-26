@@ -179,3 +179,4 @@ fn commitment_is_deterministic_for_same_inputs() {
     assert_eq!(a, b);
     assert_ne!(a, c);
 }
+
