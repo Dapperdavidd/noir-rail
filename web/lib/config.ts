@@ -28,6 +28,13 @@ export const CIRCUIT = {
   zkey: "/circuits/withdraw_final.zkey",
 };
 
+/** Set-membership disclosure circuit (prove a note ∈ vetted set, revealing nothing else). */
+export const MEMBERSHIP_CIRCUIT = {
+  wasm: "/circuits/membership.wasm",
+  zkey: "/circuits/membership_final.zkey",
+  vkey: "/circuits/membership_vk.json",
+};
+
 /** Format base units (stroops) as a human asset amount. */
 export function formatAmount(units: bigint | number, decimals = ASSET.decimals): string {
   const v = BigInt(units);

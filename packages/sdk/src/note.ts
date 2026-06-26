@@ -53,6 +53,20 @@ export interface TransferWitness {
   outPrecommitment1: string;
 }
 
+/** circom witness input for the set-membership disclosure circuit (decimal field strings). */
+export interface MembershipWitness {
+  stateRoot: string;
+  approvalRoot: string;
+  label: string;
+  value: string;
+  nullifier: string;
+  secret: string;
+  stateIndex: string;
+  stateSiblings: string[];
+  approvalIndex: string;
+  approvalSiblings: string[];
+}
+
 /** A recipient's shielded payment address — the public parts an incoming note is built from. */
 export interface PaymentAddress {
   value: bigint;
@@ -121,6 +135,40 @@ export async function buildWithdrawWitness(
     secret: toDecimal(note.secret),
     stateIndex: String(leafIndex),
     stateSiblings: path.siblings.map(toDecimal),
+  };
+}
+
+/**
+ * Build the set-membership disclosure witness: prove `note` is committed in the pool tree AND in a
+ * curated approved set, without revealing which note, its value, or its nullifier. Both Merkle paths
+ * are derived from public commitment lists, so building the witness leaks nothing on its own.
+ */
+export function buildMembershipWitness(
+  note: Note,
+  poolCommitments: bigint[],
+  approvedCommitments: bigint[],
+): MembershipWitness {
+  const stateTree = new MerkleTree(poolCommitments);
+  const stateIndex = stateTree.indexOf(note.commitment);
+  if (stateIndex < 0) throw new Error("note commitment not found in the pool state");
+  const statePath = stateTree.proof(stateIndex);
+
+  const approvalTree = new MerkleTree(approvedCommitments);
+  const approvalIndex = approvalTree.indexOf(note.commitment);
+  if (approvalIndex < 0) throw new Error("note commitment is not in the approved set");
+  const approvalPath = approvalTree.proof(approvalIndex);
+
+  return {
+    stateRoot: toDecimal(statePath.root),
+    approvalRoot: toDecimal(approvalPath.root),
+    label: toDecimal(note.label),
+    value: toDecimal(note.value),
+    nullifier: toDecimal(note.nullifier),
+    secret: toDecimal(note.secret),
+    stateIndex: String(stateIndex),
+    stateSiblings: statePath.siblings.map(toDecimal),
+    approvalIndex: String(approvalIndex),
+    approvalSiblings: approvalPath.siblings.map(toDecimal),
   };
 }
 

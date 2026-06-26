@@ -19,7 +19,7 @@ const SECTIONS: { label?: string; items: Item[] }[] = [
       { href: "/app/assets", label: "Assets", icon: "layers" },
     ],
   },
-  { label: "Audit", items: [{ href: "/app/disclosure", label: "Disclosure", icon: "eye", soon: true }] },
+  { label: "Audit", items: [{ href: "/app/disclosure", label: "Disclosure", icon: "eye" }] },
   { label: "Learn", items: [{ href: "/app/docs", label: "Documentation", icon: "book" }] },
   { items: [{ href: "/app/settings", label: "Settings", icon: "gear" }] },
 ];
@@ -35,7 +35,7 @@ const PRIMARY: Item[] = [
 ];
 const MORE: Item[] = [
   { href: "/app/docs", label: "Documentation", icon: "book" },
-  { href: "/app/disclosure", label: "Disclosure", icon: "eye", soon: true },
+  { href: "/app/disclosure", label: "Disclosure", icon: "eye" },
   { href: "/app/settings", label: "Settings", icon: "gear" },
 ];
 

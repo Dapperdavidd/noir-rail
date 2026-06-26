@@ -7,9 +7,11 @@ export {
   generateNote,
   depositArgs,
   buildWithdrawWitness,
+  buildMembershipWitness,
   type Note,
   type DepositArgs,
   type WithdrawWitness,
+  type MembershipWitness,
 } from "./note.ts";
 export {
   vkToHex,

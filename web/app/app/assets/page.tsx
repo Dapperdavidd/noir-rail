@@ -20,7 +20,7 @@ export default function Assets() {
         eyebrow="Pools"
         accent="violet"
         title="Assets"
-        desc="Each tokenized asset gets its own shielded pool — one Merkle tree, one nullifier set, one Stellar Asset Contract in custody. Phase 0 runs a single live pool; the registry scales to many in Phase 3."
+        desc="Each tokenized asset gets its own shielded pool — one Merkle tree, one nullifier set, one Stellar Asset Contract in custody. A single live pool runs today; the multi-asset registry is on the roadmap."
       />
 
       <div className="app-grid">
@@ -46,7 +46,7 @@ export default function Assets() {
 
         <div className="app-tile" style={{ gridColumn: "span 6", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center", borderStyle: "dashed", color: "var(--ink-3)" }}>
           <div className="diamond" style={{ fontSize: 26 }}>◇</div>
-          <div style={{ color: "var(--ink-2)", marginTop: 10 }}>More assets onboarding in Phase 3</div>
+          <div style={{ color: "var(--ink-2)", marginTop: 10 }}>More assets onboarding — on the roadmap</div>
           <div className="help" style={{ marginTop: 4, maxWidth: "34ch" }}>
             Treasuries, invoices, and private credit — each an isolated pool, registered with its
             issuer and pinned verification keys.

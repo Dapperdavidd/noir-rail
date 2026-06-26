@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { ASSET, formatAmount } from "@/lib/config.ts";
 import { fetchPoolState, type PoolState } from "@/lib/stellar.ts";
@@ -110,9 +111,9 @@ export default function Terminal() {
             <span className="eyebrow">amounts shielded by default</span>
           </div>
           <div className="row">
-            <button className="btn ghost" onClick={() => setToast({ kind: "ok", msg: "Disclosure console — Phase 2" })}>
+            <Link className="btn ghost" href="/app/disclosure">
               Disclose
-            </button>
+            </Link>
             <button className="btn primary" disabled={!wallet} onClick={() => setShieldOpen(true)}>
               + Shield asset
             </button>
