@@ -53,6 +53,8 @@ const ROOT_HISTORY_SIZE: u32 = 32;
 const ADMIN_KEY: Symbol = symbol_short!("admin");
 const VK_KEY: Symbol = symbol_short!("vk"); // withdraw / unshield verification key
 const TVK_KEY: Symbol = symbol_short!("tvk"); // transfer verification key
+const MVK_KEY: Symbol = symbol_short!("mvk"); // membership (disclosure) verification key
+const APPROOT_KEY: Symbol = symbol_short!("approot"); // pinned approved-set (allow-list) root
 const TOKEN_KEY: Symbol = symbol_short!("token");
 const ASSET_KEY: Symbol = symbol_short!("asset");
 const NULL_KEY: Symbol = symbol_short!("null");
@@ -83,6 +85,8 @@ pub enum Error {
     TreeAtCapacity = 7,
     /// A field element did not fit back into an i128 token amount.
     ValueOverflow = 8,
+    /// A disclosure proof's approval root does not match the pool's pinned allow-list.
+    ApprovalRootMismatch = 9,
 }
 
 #[contract]
@@ -99,10 +103,14 @@ impl ShieldedPool {
         token_address: Address,
         admin: Address,
         asset_id: u32,
+        membership_vk_bytes: Bytes,
+        approval_root: BytesN<32>,
     ) {
         env.storage().instance().set(&ADMIN_KEY, &admin);
         env.storage().instance().set(&VK_KEY, &vk_bytes);
         env.storage().instance().set(&TVK_KEY, &transfer_vk_bytes);
+        env.storage().instance().set(&MVK_KEY, &membership_vk_bytes);
+        env.storage().instance().set(&APPROOT_KEY, &approval_root);
         env.storage().instance().set(&TOKEN_KEY, &token_address);
         env.storage().instance().set(&ASSET_KEY, &asset_id);
 
@@ -248,7 +256,58 @@ impl ShieldedPool {
         Ok(())
     }
 
+    /// **Disclose membership.** Verify a selective-disclosure proof that a held note is committed in
+    /// this pool *and* is a member of the authority's pinned approved/vetted set — revealing nothing
+    /// but the two roots (never the amount, the owner, or which note). No tokens move and no state
+    /// changes; a `disclosed` event is emitted and `Ok(())` returned iff the proof is valid.
+    ///
+    /// Public signals, in circuit order: `[stateRoot, approvalRoot]`.
+    pub fn verify_membership(
+        env: &Env,
+        proof_bytes: Bytes,
+        pub_signals_bytes: Bytes,
+    ) -> Result<(), Error> {
+        let pub_signals = PublicSignals::from_bytes(env, &pub_signals_bytes);
+        let state_root_fr = pub_signals.pub_signals.get(0).unwrap();
+        let approval_root_fr = pub_signals.pub_signals.get(1).unwrap();
+
+        // 1. Anchor: the note is committed in a real, recent root of this pool.
+        if !Self::root_is_known(env, &state_root_fr.to_bytes()) {
+            return Err(Error::StaleRoot);
+        }
+        // 2. The proof must be against the authority's pinned allow-list, not an arbitrary set.
+        let pinned: BytesN<32> = env.storage().instance().get(&APPROOT_KEY).unwrap();
+        if approval_root_fr.to_bytes() != pinned {
+            return Err(Error::ApprovalRootMismatch);
+        }
+        // 3. Verify the Groth16 membership proof against the pinned key.
+        let vk_bytes: Bytes = env.storage().instance().get(&MVK_KEY).unwrap();
+        let vk = VerificationKey::from_bytes(env, &vk_bytes).map_err(|_| Error::BadProof)?;
+        let proof = Proof::from_bytes(env, &proof_bytes);
+        if !Groth16Verifier::verify_proof(env, vk, proof, &pub_signals.pub_signals)
+            .map_err(|_| Error::BadProof)?
+        {
+            return Err(Error::BadProof);
+        }
+        Ok(())
+    }
+
+    /// Publish a new approved-set (allow-list) root. Admin-only — the compliance authority curates
+    /// the vetted set off-chain and pins its Merkle root here; future disclosures verify against it.
+    pub fn set_approval_root(env: &Env, approval_root: BytesN<32>) {
+        let admin: Address = env.storage().instance().get(&ADMIN_KEY).unwrap();
+        admin.require_auth();
+        env.storage().instance().set(&APPROOT_KEY, &approval_root);
+    }
+
     // --- views ---
+
+    pub fn get_approval_root(env: &Env) -> BytesN<32> {
+        env.storage()
+            .instance()
+            .get(&APPROOT_KEY)
+            .unwrap_or(BytesN::from_array(env, &[0u8; 32]))
+    }
 
     pub fn get_merkle_root(env: &Env) -> BytesN<32> {
         env.storage()
