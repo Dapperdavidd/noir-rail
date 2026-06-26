@@ -8,12 +8,13 @@ members = [
   "cli/noterail",
 ]
 
-# Pinned to the exact versions proven end-to-end on Stellar testnet (June 2026).
-# The circuit's Poseidon (poseidon255.circom) is byte-matched to soroban-poseidon at
-# this version; bumping the SDK is a Phase-1 hardening task that must re-verify that match.
+# Tracks Stellar testnet's protocol. Bumped 25 → 26 when testnet upgraded to protocol 27 and
+# protocol-25 deposits began exceeding the per-tx instruction budget. soroban-poseidon 26 stays
+# byte-matched to the circuit's poseidon255 — verified by the `verify_membership` contract test,
+# which deposits via the on-chain Poseidon and verifies a proof built with the circuit's Poseidon.
 [workspace.dependencies]
-soroban-sdk = { version = "25.0.0-rc.1" }
-soroban-poseidon = { version = "25.0.0-rc.1" }
+soroban-sdk = { version = "26" }
+soroban-poseidon = { version = "26" }
 
 # Size- and cost-optimized wasm for the settlement path.
 [profile.release]
