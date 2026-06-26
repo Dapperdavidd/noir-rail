@@ -67,6 +67,37 @@ export async function fetchPoolState(source: string): Promise<PoolState> {
   };
 }
 
+/** The pool's pinned approved-set (allow-list) root, as hex. */
+export async function fetchApprovalRoot(source?: string): Promise<string> {
+  const bytes = await read<Uint8Array>("get_approval_root", source || READ_SOURCE);
+  return [...bytes].map((x) => x.toString(16).padStart(2, "0")).join("");
+}
+
+/**
+ * Verify a set-membership disclosure proof on-chain — by simulation, so an auditor needs no key,
+ * no fee, and submits no transaction. A successful simulation means the contract accepts the
+ * disclosure (state root anchored, allow-list matched, Groth16 verified); an error carries the
+ * contract's rejection reason.
+ */
+export async function verifyMembershipOnChain(
+  proofHex: string,
+  publicHex: string,
+  source?: string,
+): Promise<{ ok: boolean; reason?: string }> {
+  const s = server();
+  const account = await s.getAccount(source || READ_SOURCE);
+  const tx = new TransactionBuilder(account, {
+    fee: BASE_FEE,
+    networkPassphrase: NETWORK_PASSPHRASE,
+  })
+    .addOperation(new Contract(POOL_ID).call("verify_membership", bytesScVal(proofHex), bytesScVal(publicHex)))
+    .setTimeout(30)
+    .build();
+  const sim = await s.simulateTransaction(tx);
+  if (rpc.Api.isSimulationError(sim)) return { ok: false, reason: sim.error };
+  return { ok: true };
+}
+
 async function send(kp: Keypair, op: xdr.Operation): Promise<string> {
   const s = server();
   const account = await s.getAccount(kp.publicKey());
