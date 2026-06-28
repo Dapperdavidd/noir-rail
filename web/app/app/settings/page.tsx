@@ -5,10 +5,12 @@ import { ASSET, POOL_ID, NETWORK } from "@/lib/config.ts";
 import { loadNotes } from "@/lib/notes.ts";
 import { useWallet } from "@/components/app/wallet-context.tsx";
 import { PageHead } from "@/components/app/PageHead.tsx";
+import { ConfirmDialog } from "@/components/app/ConfirmDialog.tsx";
 
 export default function Settings() {
   const { wallet, busy, connect, disconnect } = useWallet();
   const [noteCount, setNoteCount] = useState(0);
+  const [clearOpen, setClearOpen] = useState(false);
   useEffect(() => setNoteCount(loadNotes().filter((n) => !n.spent).length), [wallet]);
 
   return (
@@ -55,17 +57,30 @@ export default function Settings() {
           <button
             className="btn"
             style={{ borderColor: "rgba(239,111,111,0.4)", color: "var(--red)" }}
-            onClick={() => {
-              if (confirm("Clear all local NoirRail data (notes + key) from this browser?")) {
-                localStorage.clear();
-                location.reload();
-              }
-            }}
+            onClick={() => setClearOpen(true)}
           >
             Clear local data
           </button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={clearOpen}
+        danger
+        title="Clear local data"
+        confirmLabel="Clear everything"
+        body={
+          <>
+            This removes your stored notes and testnet key from <strong style={{ color: "var(--ink)" }}>this browser</strong>.
+            On-chain state is unaffected, but any <strong style={{ color: "var(--ink)" }}>unspent notes become unrecoverable</strong>.
+          </>
+        }
+        onCancel={() => setClearOpen(false)}
+        onConfirm={() => {
+          localStorage.clear();
+          location.reload();
+        }}
+      />
     </>
   );
 }
