@@ -35,10 +35,21 @@ export default function Disclosure() {
 
   // Phase 0: the pool admits only vetted deposits, so the published allow-list is the pool's own
   // commitment set. A held note is disclosable once it has settled on-chain (is a pool leaf).
-  const approved = pool?.commitments ?? [];
+  // The published allow-list is a snapshot: the commitment prefix whose Merkle root equals the
+  // on-chain pinned root. The pool tree is append-only, so the vetted snapshot is always a prefix —
+  // which keeps an already-vetted note disclosable even after newer deposits land.
+  const approved = useMemo(() => {
+    const all = pool?.commitments ?? [];
+    if (!pinned) return all;
+    const target = BigInt("0x" + pinned);
+    for (let k = all.length; k >= 1; k--) {
+      if (new MerkleTree(all.slice(0, k)).root() === target) return all.slice(0, k);
+    }
+    return all; // no matching snapshot yet → "awaiting publish"
+  }, [pool, pinned]);
   const approvalRoot = useMemo(() => (approved.length ? new MerkleTree(approved).root() : 0n), [approved]);
-  const inPool = (n: StoredNote) => pool?.commitments.some((c) => c === BigInt(n.commitment)) ?? false;
-  const disclosable = notes.filter(inPool);
+  const inApproved = (n: StoredNote) => approved.some((c) => c === BigInt(n.commitment));
+  const disclosable = notes.filter(inApproved);
   // The pinned on-chain root must equal the set we prove against, or the chain will reject.
   const synced = pinned !== "" && BigInt("0x" + pinned) === approvalRoot;
 

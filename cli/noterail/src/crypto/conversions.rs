@@ -1,7 +1,7 @@
 use crate::error::{CoinUtilsError, Result};
 use num_bigint::BigUint;
 use sha2::{Digest, Sha256};
-use soroban_sdk::{crypto::bls12_381::Fr as BlsScalar, BytesN, Env};
+use soroban_sdk::{crypto::bls12_381::Bls12381Fr as BlsScalar, BytesN, Env};
 
 /// Convert a decimal string to a BlsScalar (full 256-bit range, no truncation).
 pub fn decimal_string_to_bls_scalar(env: &Env, decimal_str: &str) -> Result<BlsScalar> {

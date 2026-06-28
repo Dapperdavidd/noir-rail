@@ -31,7 +31,7 @@ extern crate alloc;
 
 use soroban_sdk::{
     contract, contracterror, contractimpl, symbol_short, token,
-    crypto::bls12_381::Fr,
+    crypto::bls12_381::Bls12381Fr as Fr,
     Address, Bytes, BytesN, Env, Symbol, U256, Vec,
 };
 
