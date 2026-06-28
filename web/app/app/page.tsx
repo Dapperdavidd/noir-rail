@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ASSET, POOL_ID, formatAmount } from "@/lib/config.ts";
 import { fetchPoolState, type PoolState } from "@/lib/stellar.ts";
-import { loadNotes, type StoredNote } from "@/lib/notes.ts";
+import { loadPoolNotes, type StoredNote } from "@/lib/notes.ts";
 import { ActivityStream } from "@/components/ActivityStream.tsx";
 import { useWallet } from "@/components/app/wallet-context.tsx";
 import { PageHead } from "@/components/app/PageHead.tsx";
@@ -17,9 +17,10 @@ export default function Overview() {
   const [pool, setPool] = useState<PoolState | null>(null);
   const [poolLoading, setPoolLoading] = useState(true);
   const [notes, setNotes] = useState<StoredNote[]>([]);
+  const [revealTotal, setRevealTotal] = useState(false);
 
   useEffect(() => {
-    setNotes(loadNotes());
+    setNotes(loadPoolNotes());
     setPoolLoading(true);
     fetchPoolState(wallet?.publicKey() ?? "")
       .then(setPool)
@@ -42,13 +43,21 @@ export default function Overview() {
       <div className="app-grid" style={{ marginBottom: 16 }}>
         <Tile span={3} label="Total value · shielded" accent="cyan">
           {wallet ? (
-            <span className="shielded" style={{ fontSize: 15 }}>view ●●●●</span>
+            revealTotal ? (
+              <button className="revealed" onClick={() => setRevealTotal(false)} style={{ fontSize: 15, background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }} title="hide">
+                {formatAmount(held)} {ASSET.symbol}
+              </button>
+            ) : (
+              <button className="shielded" onClick={() => setRevealTotal(true)} style={{ fontSize: 15 }} title="reveal (your key)">
+                view ●●●●
+              </button>
+            )
           ) : poolLoading ? (
             <Sk w={120} h={26} r={7} />
           ) : (
             <span className="num stat-value">{pool ? formatAmount(pool.balance) : "—"}</span>
           )}
-          <div className="help">{wallet ? "visible only with your key" : "pool TVL"}</div>
+          <div className="help">{wallet ? (revealTotal ? "your shielded total · click to hide" : "click to reveal · visible only with your key") : "pool TVL"}</div>
         </Tile>
         <Tile span={3} label="Your positions">
           <span className="num stat-value">{live.length}</span>

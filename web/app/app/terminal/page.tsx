@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { ASSET, formatAmount } from "@/lib/config.ts";
 import { fetchPoolState, type PoolState } from "@/lib/stellar.ts";
-import { loadNotes, type StoredNote } from "@/lib/notes.ts";
+import { loadPoolNotes, type StoredNote } from "@/lib/notes.ts";
 import { ShieldDialog } from "@/components/ShieldDialog.tsx";
 import { WithdrawDialog } from "@/components/WithdrawDialog.tsx";
 import { ActivityStream } from "@/components/ActivityStream.tsx";
@@ -23,6 +23,7 @@ export default function Terminal() {
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
   const [shieldOpen, setShieldOpen] = useState(false);
   const [withdrawNote, setWithdrawNote] = useState<StoredNote | null>(null);
+  const [revealTotal, setRevealTotal] = useState(false);
   const [toast, setToast] = useState<{ kind: "ok" | "err"; msg: string } | null>(null);
 
   const refreshPool = useCallback(async (src: string) => {
@@ -41,7 +42,7 @@ export default function Terminal() {
   const showPoolSk = poolLoading && !pool;
 
   useEffect(() => {
-    setNotes(loadNotes());
+    setNotes(loadPoolNotes());
     void refreshPool(wallet?.publicKey() ?? "");
   }, [wallet, refreshPool]);
 
@@ -53,7 +54,7 @@ export default function Terminal() {
 
   const onSettled = (msg: string) => {
     setToast({ kind: "ok", msg });
-    setNotes(loadNotes());
+    setNotes(loadPoolNotes());
     if (wallet) void refreshPool(wallet.publicKey());
   };
 
@@ -72,13 +73,21 @@ export default function Terminal() {
       <div className="app-grid" style={{ marginBottom: 16 }}>
         <Stat span={3} label="Total value · shielded" accent="cyan">
           {wallet ? (
-            <span className="shielded" style={{ fontSize: 15 }}>view ●●●●</span>
+            revealTotal ? (
+              <button className="revealed" onClick={() => setRevealTotal(false)} style={{ fontSize: 15, background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }} title="hide">
+                {formatAmount(totalShielded)} {ASSET.symbol}
+              </button>
+            ) : (
+              <button className="shielded" onClick={() => setRevealTotal(true)} style={{ fontSize: 15 }} title="reveal (your key)">
+                view ●●●●
+              </button>
+            )
           ) : showPoolSk ? (
             <Sk w={120} h={26} r={7} />
           ) : (
             <span className="num stat-value">{pool ? formatAmount(pool.balance) : "—"}</span>
           )}
-          <div className="help">{wallet ? "visible only with your key" : "pool TVL · connect to shield"}</div>
+          <div className="help">{wallet ? (revealTotal ? "your shielded total · click to hide" : "click to reveal · visible only with your key") : "pool TVL · connect to shield"}</div>
         </Stat>
         <Stat span={3} label="Your positions">
           <span className="num stat-value">{liveNotes.length}</span>
