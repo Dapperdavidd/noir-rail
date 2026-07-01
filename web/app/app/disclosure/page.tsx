@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { MerkleTree } from "@noir-rail/sdk";
+import { useEffect, useState } from "react";
 import { ASSET } from "@/lib/config.ts";
-import { fetchPoolState, fetchApprovalRoot, verifyMembershipOnChain } from "@/lib/stellar.ts";
-import { loadNotes, toNote, type StoredNote } from "@/lib/notes.ts";
+import { fetchPoolState, verifyMembershipOnChain } from "@/lib/stellar.ts";
+import { loadPoolNotes, toNote, type StoredNote } from "@/lib/notes.ts";
 import { proveMembership, verifyMembership } from "@/lib/disclosure.ts";
 import { PageHead } from "@/components/app/PageHead.tsx";
 
@@ -21,37 +20,22 @@ type Result =
 export default function Disclosure() {
   const [notes, setNotes] = useState<StoredNote[]>([]);
   const [pool, setPool] = useState<{ commitments: bigint[]; root: string } | null>(null);
-  const [pinned, setPinned] = useState<string>("");
   const [busy, setBusy] = useState<string | null>(null);
   const [result, setResult] = useState<Result | null>(null);
 
   useEffect(() => {
-    setNotes(loadNotes().filter((n) => !n.spent));
+    setNotes(loadPoolNotes().filter((n) => !n.spent));
     fetchPoolState("")
       .then((s) => setPool({ commitments: s.commitments.map((h) => BigInt("0x" + h)), root: s.root }))
       .catch(() => setPool({ commitments: [], root: "" }));
-    fetchApprovalRoot().then(setPinned).catch(() => setPinned(""));
   }, []);
 
-  // Phase 0: the pool admits only vetted deposits, so the published allow-list is the pool's own
-  // commitment set. A held note is disclosable once it has settled on-chain (is a pool leaf).
-  // The published allow-list is a snapshot: the commitment prefix whose Merkle root equals the
-  // on-chain pinned root. The pool tree is append-only, so the vetted snapshot is always a prefix —
-  // which keeps an already-vetted note disclosable even after newer deposits land.
-  const approved = useMemo(() => {
-    const all = pool?.commitments ?? [];
-    if (!pinned) return all;
-    const target = BigInt("0x" + pinned);
-    for (let k = all.length; k >= 1; k--) {
-      if (new MerkleTree(all.slice(0, k)).root() === target) return all.slice(0, k);
-    }
-    return all; // no matching snapshot yet → "awaiting publish"
-  }, [pool, pinned]);
-  const approvalRoot = useMemo(() => (approved.length ? new MerkleTree(approved).root() : 0n), [approved]);
-  const inApproved = (n: StoredNote) => approved.some((c) => c === BigInt(n.commitment));
-  const disclosable = notes.filter(inApproved);
-  // The pinned on-chain root must equal the set we prove against, or the chain will reject.
-  const synced = pinned !== "" && BigInt("0x" + pinned) === approvalRoot;
+  // Phase 0: the pool admits only vetted deposits, so the pool's own commitment set IS the vetted
+  // allow-list, and the contract accepts any recent pool root. Any settled position is disclosable —
+  // no separate publication step, nothing goes stale.
+  const approved = pool?.commitments ?? [];
+  const approvalRootHex = pool?.root ?? "";
+  const disclosable = notes.filter((n) => approved.some((c) => c === BigInt(n.commitment)));
 
   async function disclose(n: StoredNote) {
     if (!pool) return;
@@ -99,14 +83,10 @@ export default function Disclosure() {
         <div className="app-tile mob-half" style={{ gridColumn: "span 4" }}>
           <div className="eyebrow" style={{ marginBottom: 10 }}>Allow-list root · on-chain</div>
           <div className="mono" style={{ fontSize: 13, color: "var(--amber)", wordBreak: "break-all" }}>
-            {pinned ? hexShort(pinned) : "—"}
+            {approvalRootHex ? hexShort(approvalRootHex) : "—"}
           </div>
           <div className="help" style={{ marginTop: 6 }}>
-            {pinned
-              ? synced
-                ? `${approved.length} vetted commitments · in sync`
-                : "awaiting publish · run set_approval_root"
-              : "loading…"}
+            {pool ? `${approved.length} vetted deposits · the pool is the vetted set` : "loading…"}
           </div>
         </div>
         <div className="app-tile mob-half" style={{ gridColumn: "span 4" }}>
@@ -184,7 +164,7 @@ export default function Disclosure() {
                 <strong style={{ fontSize: 15 }}>Membership disclosed</strong>
               </div>
               <p className="help" style={{ marginTop: 0, marginBottom: 16 }}>
-                The Soroban contract verified the proof against its pinned allow-list. An auditor learns the holder controls
+                The Soroban contract verified the proof against the pool's vetted set. An auditor learns the holder controls
                 a vetted position — and that is <em style={{ color: "var(--ink)", fontStyle: "normal" }}>all</em> they learn.
               </p>
               <div className="app-grid" style={{ gap: 12 }}>

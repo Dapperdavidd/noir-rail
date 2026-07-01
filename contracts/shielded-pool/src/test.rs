@@ -159,11 +159,15 @@ fn verify_membership_rejects_an_unanchored_state_root() {
 }
 
 #[test]
-fn verify_membership_rejects_a_foreign_allow_list() {
-    // Anchored state root, valid proof — but pinned to a different allow-list root.
-    let (env, client, token_addr) = membership_setup([1u8; 32]);
+fn verify_membership_rejects_an_unrecognised_allow_list() {
+    // Anchored state root, but an allow-list root that is neither pinned nor a known pool root.
+    // PUB layout: [count u32][stateRoot 32][approvalRoot 32]; corrupt a byte of the approvalRoot.
+    let (env, client, token_addr) = membership_setup(*APPROOT);
     seed_pool(&env, &client, &token_addr);
-    let res = client.try_verify_membership(&Bytes::from_slice(&env, PROOF), &Bytes::from_slice(&env, PUB));
+    let mut pb = [0u8; 68];
+    pb.copy_from_slice(PUB);
+    pb[40] ^= 0x55;
+    let res = client.try_verify_membership(&Bytes::from_slice(&env, PROOF), &Bytes::from_slice(&env, &pb));
     assert_eq!(res, Err(Ok(Error::ApprovalRootMismatch)));
 }
 
